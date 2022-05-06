@@ -75,10 +75,4 @@ namespace SessionsData
         DateTime start_time;
         public List<ActivityData> activities;
     }
-
-
-    //To XML
-
-
-    //From XML
 }

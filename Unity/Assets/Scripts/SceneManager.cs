@@ -19,7 +19,7 @@ public class SceneManager : MonoBehaviour
 
     private double last_t = 0;
     private double last_mvt_nb=0;
-    private double last_pos = 0;
+    private Vector3 last_pos;
     
     SessionData SD;
     ActivityData currentActivity;
@@ -30,8 +30,8 @@ public class SceneManager : MonoBehaviour
     {
         //Admin panel elements
         InputField IPInput = GameObject.Find("AdminPanel/IPInput").GetComponent<InputField>();
-        //IPInput.text = "192.168.7.2";
-        IPInput.text = "127.0.0.1";
+        IPInput.text = "192.168.7.2";
+        //IPInput.text = "127.0.0.1";
         
         Button ConnectBt = GameObject.Find("AdminPanel/ConnectBt").GetComponent<Button>();
         ConnectBt.onClick.AddListener(() => { Connect(ConnectBt, IPInput); });
@@ -98,7 +98,6 @@ public class SceneManager : MonoBehaviour
         enablePanel("ControlPanel", false);
         
         first_added_activity = true;
-        
     }
 
     // Update is called once per frame
@@ -167,23 +166,22 @@ public class SceneManager : MonoBehaviour
         last_mvt_nb = Robot.State["MvtProgress"][0];
         //Distance
         Vector3 X = new Vector3((float)Robot.State["X"][0], (float)Robot.State["X"][1], (float)Robot.State["X"][2]);
-        currentActivity.distance += X.magnitude-last_pos;
-        last_pos = X.magnitude;
+        currentActivity.distance += (X-last_pos).magnitude;
+        last_pos = X;
     }
     
     //Update text info of session
     void updateSessionPanel()
     {
-        if(!Object.Equals(currentActivity, default(ActivityData)))
+        if(currentActivity.type != null)
         {
             if(currentActivity.type!="None" &&  currentActivity.type!="Lock")
             {
-                //GameObject panel = GameObject.Find("ActivitiesList");
                 string act_txt =  
                 currentActivity.type;
                 
                 if(currentActivity.type=="Deweighting") {
-                    act_txt += "(" + currentActivity.gravity.ToString("0.0") + "kg):";
+                    act_txt += " (" + currentActivity.gravity.ToString("0.0") + "kg):";
                 }
                 else
                 {
@@ -192,10 +190,14 @@ public class SceneManager : MonoBehaviour
                 
                 act_txt += "\t" + 
                 currentActivity.GetTime().ToString("0") + "s\t" + 
-                currentActivity.nb_mvts + " mvts (" + currentActivity.distance.ToString("0.00") + "m)\n";
+                currentActivity.nb_mvts + "Mvts (" + currentActivity.distance.ToString("0.00") + "m)";
                 
                 GameObject.Find("CurrentActivityTxt").GetComponentInChildren<TMPro.TextMeshProUGUI>().text = act_txt;
             }
+        }
+        else
+        {
+            GameObject.Find("CurrentActivityTxt").GetComponentInChildren<TMPro.TextMeshProUGUI>().text = "";
         }
     }
     
@@ -221,6 +223,8 @@ public class SceneManager : MonoBehaviour
             {
                 first_added_activity = false;
             }
+            //Initialise last_pos
+            last_pos = new Vector3((float)Robot.State["X"][0], (float)Robot.State["X"][1], (float)Robot.State["X"][2]);
         }
     }
 
@@ -528,8 +532,6 @@ public class SceneManager : MonoBehaviour
     
     void OnApplicationQuit() 
     {
-        //TODO: check if exists!
-        //TODO: put one when change patient
         //Write session to file if exists
         if(!Object.Equals(SD, default(SessionData)))
         {
