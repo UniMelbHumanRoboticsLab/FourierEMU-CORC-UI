@@ -4,7 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.EventSystems;
 using CORC;
-
+using SessionsData;
 
 public class SceneManager : MonoBehaviour
 {
@@ -17,7 +17,13 @@ public class SceneManager : MonoBehaviour
     private Text Status;
     private InputField InputReturnCmd;
 
-    double last_t = 0;
+    private double last_t = 0;
+    private double last_mvt_nb=0;
+    private double last_pos = 0;
+    
+    SessionData SD;
+    ActivityData currentActivity;
+    bool first_added_activity = true;
 
     // Start is called before the first frame update
     void Start()
@@ -85,8 +91,12 @@ public class SceneManager : MonoBehaviour
         //TODO: excepetion/error and proper naming and logging values
         //Robot.SetLoggingFile("mylog.csv");
         
-        //Disable command panel
+        //Disable panels
+        enablePanel("SessionPanel", false);
         enablePanel("ControlPanel", false);
+        
+        first_added_activity = true;
+        
     }
 
     // Update is called once per frame
@@ -121,9 +131,14 @@ public class SceneManager : MonoBehaviour
             Status.text += Robot.State["Contribution"][0].ToString("0.0");
             Status.text += "\n";
             
+            //Update session data: mvt counts, distance...
+            updateState();
+            
             //Update UI
             updateContribution(Robot.State["Contribution"][0]);
             updatePtsProgress(Robot.State["MvtProgress"][0]);
+            updateSessionPanel();
+
 
             //Map cursor position and force interaction vector to current robot values
             float scale = 1000;
@@ -139,6 +154,59 @@ public class SceneManager : MonoBehaviour
         {
             Status.text += " Not Connected\n";
             enablePanel("ControlPanel", false);
+        }
+    }
+
+    //Update relevant session data: count nv mvts, distance ...
+    void updateState()
+    {
+        //Nb mvts count
+        currentActivity.nb_mvts += ((int)Robot.State["MvtProgress"][0]) != ((int)last_mvt_nb) ? 1 : 0;
+        last_mvt_nb = Robot.State["MvtProgress"][0];
+        //Distance
+        Vector3 X = new Vector3((float)Robot.State["X"][0], (float)Robot.State["X"][1], (float)Robot.State["X"][2]);
+        currentActivity.distance += X.magnitude-last_pos;
+        last_pos = X.magnitude;
+    }
+    
+    //Update text info of session
+    void updateSessionPanel()
+    {
+        if(!Object.Equals(currentActivity, default(ActivityData)))
+        {
+            if(currentActivity.type!="None" &&  currentActivity.type!="Lock")
+            {
+                //GameObject panel = GameObject.Find("ActivitiesList");
+                GameObject.Find("CurrentActivityTxt").GetComponentInChildren<TMPro.TextMeshProUGUI>().text =  
+                currentActivity.type + ":\t" + 
+                currentActivity.GetTime().ToString("0") + "s\t" + 
+                currentActivity.nb_mvts + " mvts (" + currentActivity.distance.ToString("0.00") + "m)\n";
+            }
+        }
+    }
+    
+    //Both save current activity, create new one and populate Session panel
+    void AddActivity(string name, double a, double g)
+    {
+        SD.AddActivity(currentActivity);
+        currentActivity = new ActivityData(name, a, g);
+        
+        //New activity on panel
+        if(name!="None" &&  name!="Lock")
+        {
+            GameObject list = GameObject.Find("ActivitiesList");
+            TMPro.TextMeshProUGUI act = GameObject.Find("CurrentActivityTxt").GetComponentInChildren<TMPro.TextMeshProUGUI>();
+            //keep and replace first existing one
+            if(!first_added_activity)
+            {
+                TMPro.TextMeshProUGUI new_act = Instantiate(act, list.transform);
+                new_act.name=SD.activities.Count.ToString("00");
+                new_act.color = new Color32(255, 255, 255, 255);
+            }
+            else
+            {
+                first_added_activity = false;
+            }
         }
     }
 
@@ -278,7 +346,45 @@ public class SceneManager : MonoBehaviour
         InputReturnCmd.text = Robot.GetCmd();
         if(InputReturnCmd.text.Contains("OK"))
         {
-             GameObject.Find("CmdSuccessSnd").GetComponent<AudioSource>().Play();
+            Slider MassSl = GameObject.Find("ControlPanel/MassSl").GetComponent<Slider>();
+            Slider AssistanceSl = GameObject.Find("PathLayout/AssistanceSl").GetComponent<Slider>();
+            GameObject.Find("CmdSuccessSnd").GetComponent<AudioSource>().Play();
+            //Create new activity based on command run
+            switch(InputReturnCmd.text)
+            {
+                //Lock/stop
+                case "OKLO":
+                    AddActivity("Lock", -1, -1);
+                    break;
+                //UnLock
+                case "OKUN":
+                    AddActivity("None", -1, MassSl.value);
+                    break;
+                //Gravity
+                case "OKGR":
+                    AddActivity("Deweighting", -1, MassSl.value);
+                    break;
+                //Mobilisation
+                case "OKJE":
+                    AddActivity("Mobilisation", -1, -1);
+                    break;
+                //Path
+                case "OKPA":
+                    AddActivity("Guidance", AssistanceSl.value, -1);
+                    break;
+                
+                //Change mass
+                case "OKUM":
+                    currentActivity.gravity = MassSl.value;
+                    break;
+                //Change assistance
+                case "OKUP":
+                    currentActivity.assistance = AssistanceSl.value;
+                    break;
+
+                default:
+                    break;
+            }
         }
         else
         {
@@ -369,6 +475,9 @@ public class SceneManager : MonoBehaviour
             if(Robot.IsInitialised()) {
                 GameObject.Find("ConnectSuccessSnd").GetComponent<AudioSource>().Play();
                 bt.GetComponentInChildren<Text>().text = "Disconnect";
+                enablePanel("SessionPanel", true);
+                SD = new SessionData(0); //TODO at patient selection
+                currentActivity = new ActivityData("None", -1, -1);
                 enablePanel("ControlPanel", true);
             }
         }
@@ -387,6 +496,7 @@ public class SceneManager : MonoBehaviour
     
     void OnApplicationQuit() 
     {
+        SD.WriteToXML();
         if (Robot.IsInitialised())
         {
             GoGrav(.0);

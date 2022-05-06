@@ -189,7 +189,7 @@ bool updatePath(StateMachine & SM) {
             if(params[0]>-30. &&  params[0]<30.) {
                 s->setAssistanceLevel(params[0]);
             }
-            sm.UIserver->sendCmd(string("OKUD"));
+            sm.UIserver->sendCmd(string("OKUP"));
         }
         else {
             spdlog::warn("updatePath: Error: number of command parameters.");
@@ -214,7 +214,7 @@ bool updateMass(StateMachine & SM) {
             if(params[0]>0. &&  params[0]<3.) {
                 s->setMass(params[0]);
             }
-            sm.UIserver->sendCmd(string("OKUD"));
+            sm.UIserver->sendCmd(string("OKUM"));
         }
         else {
             spdlog::warn("updateMass: Error: number of command parameters.");
@@ -262,7 +262,7 @@ EMUFourierMachine::EMUFourierMachine() {
     addTransition("StandbyState", &goToGravity, "StandbyState");
     addTransition("MinJerkState", &goToGravity, "StandbyState");
     addTransition("PathState", &goToGravity, "StandbyState");
-    addTransition("StandbyState", &updateMass, "StandbyState");
+    addTransition("StandbyState", &updateMass, "StandbyState"); //Fake transition never returning true
 
     addTransition("PathState", &goToLock, "LockState");
     addTransition("MinJerkState", &goToLock, "LockState");
