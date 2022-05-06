@@ -30,8 +30,8 @@ public class SceneManager : MonoBehaviour
     {
         //Admin panel elements
         InputField IPInput = GameObject.Find("AdminPanel/IPInput").GetComponent<InputField>();
-        IPInput.text = "192.168.7.2";
-        //IPInput.text = "127.0.0.1";
+        //IPInput.text = "192.168.7.2";
+        IPInput.text = "127.0.0.1";
         
         Button ConnectBt = GameObject.Find("AdminPanel/ConnectBt").GetComponent<Button>();
         ConnectBt.onClick.AddListener(() => { Connect(ConnectBt, IPInput); });
@@ -161,12 +161,17 @@ public class SceneManager : MonoBehaviour
     //Update relevant session data: count nv mvts, distance ...
     void updateState()
     {
+        
+        //For current activity and overall session
         //Nb mvts count
-        currentActivity.nb_mvts += ((int)Robot.State["MvtProgress"][0]) != ((int)last_mvt_nb) ? 1 : 0;
+        int is_new_mvt = ((int)Robot.State["MvtProgress"][0]) != ((int)last_mvt_nb) ? 1 : 0;
+        currentActivity.nb_mvts += is_new_mvt;
+        SD.nb_mvts += is_new_mvt;
         last_mvt_nb = Robot.State["MvtProgress"][0];
         //Distance
         Vector3 X = new Vector3((float)Robot.State["X"][0], (float)Robot.State["X"][1], (float)Robot.State["X"][2]);
         currentActivity.distance += (X-last_pos).magnitude;
+        SD.distance += (X-last_pos).magnitude;
         last_pos = X;
     }
     
@@ -177,10 +182,12 @@ public class SceneManager : MonoBehaviour
         {
             if(currentActivity.type!="None" &&  currentActivity.type!="Lock")
             {
+                //Of current activity
                 string act_txt =  
                 currentActivity.type;
                 
-                if(currentActivity.type=="Deweighting") {
+                if(currentActivity.type=="Deweighting")
+                {
                     act_txt += " (" + currentActivity.gravity.ToString("0.0") + "kg):";
                 }
                 else
@@ -190,14 +197,20 @@ public class SceneManager : MonoBehaviour
                 
                 act_txt += "\t" + 
                 currentActivity.GetTime().ToString("0") + "s\t" + 
-                currentActivity.nb_mvts + "Mvts (" + currentActivity.distance.ToString("0.00") + "m)";
+                currentActivity.nb_mvts + "Mvts (" + currentActivity.distance.ToString("0.0") + "m)";
                 
                 GameObject.Find("CurrentActivityTxt").GetComponentInChildren<TMPro.TextMeshProUGUI>().text = act_txt;
             }
+            
+            //of overall session
+            GameObject.Find("SessionTxt").GetComponentInChildren<TMPro.TextMeshProUGUI>().text = "Session:\t" + 
+            SD.GetTimeMin().ToString("0") + "min\t" + 
+            SD.nb_mvts + "Mvts (" + SD.distance.ToString("0.0") + "m)";
         }
         else
         {
             GameObject.Find("CurrentActivityTxt").GetComponentInChildren<TMPro.TextMeshProUGUI>().text = "";
+            GameObject.Find("SessionTxt").GetComponentInChildren<TMPro.TextMeshProUGUI>().text = "Session:\t";
         }
     }
     
@@ -515,7 +528,7 @@ public class SceneManager : MonoBehaviour
         }
         int val = GameObject.Find("SessionPanel/PatientsList").GetComponent<TMPro.TMP_Dropdown>().value;
         //If session already existed: save it first
-        if(!Object.Equals(SD, default(SessionData)))
+        if(SD.activities!=null)
         {
             SD.WriteToXML();
         }

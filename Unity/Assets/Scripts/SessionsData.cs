@@ -52,12 +52,20 @@ namespace SessionsData
             patient_id = p;
             activities = new List<ActivityData>();
             start_time = DateTime.Now;
+            distance = 0;
+            nb_mvts = 0;
         }
         
         public void AddActivity(ActivityData a)
         {
             a.CalculateFinalTime();
             activities.Add(a);
+        }
+        
+        public double GetTimeMin()
+        {
+            TimeSpan interval = DateTime.Now - start_time;
+            return interval.TotalMinutes;
         }
         
         public void WriteToXML()
@@ -74,5 +82,7 @@ namespace SessionsData
         int patient_id;
         DateTime start_time;
         public List<ActivityData> activities;
+        public double distance; //total of session
+        public int nb_mvts; //total of session
     }
 }
