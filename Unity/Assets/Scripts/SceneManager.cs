@@ -28,8 +28,8 @@ public class SceneManager : MonoBehaviour
     {
         //Admin panel elements
         InputField IPInput = GameObject.Find("AdminPanel/IPInput").GetComponent<InputField>();
-        //IPInput.text = "192.168.7.2";
-        IPInput.text = "127.0.0.1";
+        IPInput.text = "192.168.7.2";
+        //IPInput.text = "127.0.0.1";
         
         Button ConnectBt = GameObject.Find("AdminPanel/ConnectBt").GetComponent<Button>();
         ConnectBt.onClick.AddListener(() => { Connect(ConnectBt, IPInput); });
@@ -267,7 +267,7 @@ public class SceneManager : MonoBehaviour
         int bt_idx = int.Parse(bt.transform.parent.name);
         GameObject pts_list = GameObject.Find("PtsLayout");
         
-        if(pts_list.transform.childCount<4 && bt_idx+1 == pts_list.transform.childCount) {
+        if(pts_list.transform.childCount<5 && bt_idx+1 == pts_list.transform.childCount) {
             GameObject pt = GameObject.Find("PtsLayout/"+bt.transform.parent.name);
             GameObject new_pt = Instantiate(pt, pt.transform.parent);
             new_pt.name = (bt_idx+1).ToString("0");
