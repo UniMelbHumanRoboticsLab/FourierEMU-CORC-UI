@@ -10,9 +10,7 @@ public class SceneManager : MonoBehaviour
 {
     public CORCM3_FOURIER Robot;
     
-    public Button ToJerkBt, ToPathBt;
     public GameObject Cursor, Arrow;
-    public InputField x_val, y_val, z_val, T_val, x_val_path, y_val_path, z_val_path;
     
     private Text Status;
     private InputField InputReturnCmd;
@@ -82,6 +80,10 @@ public class SceneManager : MonoBehaviour
         
         Button GoPathBt = GameObject.Find("PathLayout/GoPathBt").GetComponent<Button>();
         GoPathBt.onClick.AddListener(() => { GoPath(PtsLayout, AssistanceSl.value); });
+        
+        Slider T_valSl = GameObject.Find("T_val").GetComponent<Slider>();
+        T_valSl.onValueChanged.AddListener(delegate { UpdatePtTimeSlider(T_valSl.value, T_valSl); });
+        
         //Add pt
         string bt_path="PtsLayout/0/";
         Button AddPtBt = GameObject.Find(bt_path+"AddPtBt").GetComponent<Button>();
@@ -247,6 +249,12 @@ public class SceneManager : MonoBehaviour
         GameObject.Find(panel_path).GetComponent<CanvasGroup>().interactable = enable;
     }
     
+    void UpdatePtTimeSlider(float v, Slider sl)
+    {
+        sl.GetComponentsInChildren<TMPro.TextMeshProUGUI>()[1].text=v.ToString("0.0s");
+    }
+
+    
     void AddPt(Button bt)
     {
         //Fill in pt value
@@ -254,7 +262,6 @@ public class SceneManager : MonoBehaviour
         GameObject.Find(vals_path+"x_val").GetComponent<InputField>().text = Robot.State["X"][0].ToString(".000");
         GameObject.Find(vals_path+"y_val").GetComponent<InputField>().text = Robot.State["X"][1].ToString(".000");
         GameObject.Find(vals_path+"z_val").GetComponent<InputField>().text = Robot.State["X"][2].ToString(".000");
-        GameObject.Find(vals_path+"T_val").GetComponent<InputField>().text = "1.0"; //default 1 second
         
         //Add a new Pt if required
         int bt_idx = int.Parse(bt.transform.parent.name);
@@ -274,7 +281,10 @@ public class SceneManager : MonoBehaviour
             GameObject.Find(vals_path+"x_val").GetComponent<InputField>().text="";
             GameObject.Find(vals_path+"y_val").GetComponent<InputField>().text="";
             GameObject.Find(vals_path+"z_val").GetComponent<InputField>().text="";
-            GameObject.Find(vals_path+"T_val").GetComponent<InputField>().text="";
+            GameObject.Find(vals_path+"T_val").GetComponent<Slider>().value=1.0f;
+            Slider T_valSl = GameObject.Find(vals_path+"T_val").GetComponent<Slider>();
+            T_valSl.GetComponentsInChildren<TMPro.TextMeshProUGUI>()[1].text="1.0s";
+            T_valSl.onValueChanged.AddListener(delegate { UpdatePtTimeSlider(T_valSl.value, T_valSl); });
             //Disable delete on previous pt
             GameObject.Find("PtsLayout/"+bt.transform.parent.name+"/DelPtBt").GetComponent<Button>().interactable = false;
         }
@@ -285,7 +295,6 @@ public class SceneManager : MonoBehaviour
         //Remove pt (except if 1st one: clear only)
         int bt_idx = int.Parse(bt.transform.parent.name);
         GameObject pts_list = GameObject.Find("PtsLayout");
-        Debug.Log(pts_list.transform.childCount);
         
         if(bt_idx>0) {
             GameObject pt = GameObject.Find("PtsLayout/"+(bt_idx).ToString("0"));
@@ -300,7 +309,7 @@ public class SceneManager : MonoBehaviour
             GameObject.Find(vals_path+"x_val").GetComponent<InputField>().text="";
             GameObject.Find(vals_path+"y_val").GetComponent<InputField>().text="";
             GameObject.Find(vals_path+"z_val").GetComponent<InputField>().text="";
-            GameObject.Find(vals_path+"T_val").GetComponent<InputField>().text="";
+            GameObject.Find(vals_path+"T_val").GetComponent<Slider>().value=1.0f;
             //Re-activate del button prev button
             GameObject.Find("PtsLayout/"+"0"+"/DelPtBt").GetComponent<Button>().interactable = true;
         }
@@ -313,17 +322,28 @@ public class SceneManager : MonoBehaviour
         int idx = 0;
         foreach (Transform pt in pts.transform)
         {
+            //Find pt progress slider
+            Slider [] sls = pt.GetComponentsInChildren<Slider>();
+            Slider progress_sl = null;
+            foreach (Slider sl in sls)
+            {
+                if(sl.name == "ProgressSl")
+                {
+                    progress_sl = sl;
+                }
+            }
+            //update it
             if(progress>idx+1) //Mvt completed
             {
-                pt.GetComponentInChildren<Slider>().value=1.0f;
+                progress_sl.value=1.0f;
             }
             else if (progress>idx) //partial mvt
             {
-                pt.GetComponentInChildren<Slider>().value = (float)(progress - (int)progress);
+                progress_sl.value = (float)(progress - (int)progress);
             }
             else
             {
-                pt.GetComponentInChildren<Slider>().value = 0.0f;
+                progress_sl.value = 0.0f;
             }
             idx++;
         }
@@ -364,8 +384,7 @@ public class SceneManager : MonoBehaviour
             inp = GameObject.Find(pt_path+"z_val").GetComponent<InputField>();
             p.Add(double.Parse(inp.text));
             //T
-            inp = GameObject.Find(pt_path+"T_val").GetComponent<InputField>();
-            p.Add(double.Parse(inp.text));
+            p.Add(GameObject.Find(pt_path+"T_val").GetComponent<Slider>().value);
         }
         
         return p.ToArray();
@@ -475,7 +494,7 @@ public class SceneManager : MonoBehaviour
     }
 
     //Actually send changed mass value (on slider release only)
-    void ChangeMass(/*PointerEventData data, */float v, Slider sl)
+    void ChangeMass(float v, Slider sl)
     {
         sl.GetComponentInChildren<TMPro.TextMeshProUGUI>().text=v.ToString("0.0")+"kg";
         double [] p = {v};
