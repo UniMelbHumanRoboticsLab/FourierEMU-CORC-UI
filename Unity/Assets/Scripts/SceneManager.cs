@@ -47,9 +47,11 @@ public class SceneManager : MonoBehaviour
         
         
         //Session state panel
-        Button QuitBt = GameObject.Find("SessionPanel/QuitBt").GetComponent<Button>();
-        QuitBt.onClick.AddListener(() => { Quit(); });
+        Button StartSessionBt = GameObject.Find("StartSessionBt").GetComponent<Button>();
+        StartSessionBt.onClick.AddListener(() => { StartSession(StartSessionBt); });
         
+        Button QuitBt = GameObject.Find("QuitBt").GetComponent<Button>();
+        QuitBt.onClick.AddListener(() => { Quit(); });
         
         //Control panel
         Button LockBt = GameObject.Find("ControlPanel/LockBt").GetComponent<Button>();
@@ -177,10 +179,22 @@ public class SceneManager : MonoBehaviour
             if(currentActivity.type!="None" &&  currentActivity.type!="Lock")
             {
                 //GameObject panel = GameObject.Find("ActivitiesList");
-                GameObject.Find("CurrentActivityTxt").GetComponentInChildren<TMPro.TextMeshProUGUI>().text =  
-                currentActivity.type + ":\t" + 
+                string act_txt =  
+                currentActivity.type;
+                
+                if(currentActivity.type=="Deweighting") {
+                    act_txt += "(" + currentActivity.gravity.ToString("0.0") + "kg):";
+                }
+                else
+                {
+                    act_txt += ":\t\t";
+                }
+                
+                act_txt += "\t" + 
                 currentActivity.GetTime().ToString("0") + "s\t" + 
                 currentActivity.nb_mvts + " mvts (" + currentActivity.distance.ToString("0.00") + "m)\n";
+                
+                GameObject.Find("CurrentActivityTxt").GetComponentInChildren<TMPro.TextMeshProUGUI>().text = act_txt;
             }
         }
     }
@@ -444,7 +458,7 @@ public class SceneManager : MonoBehaviour
     }
 
     //Actually send changed mass value (on slider release only)
-    public void ChangeMass(/*PointerEventData data, */float v, Slider sl)
+    void ChangeMass(/*PointerEventData data, */float v, Slider sl)
     {
         sl.GetComponentInChildren<TMPro.TextMeshProUGUI>().text=v.ToString("0.0")+"kg";
         double [] p = {v};
@@ -453,13 +467,13 @@ public class SceneManager : MonoBehaviour
     }    
     
     //Update assistance value on slider WITHOUT sending the command
-    public void UpdatePathAssistanceSlider(float v, Slider sl)
+    void UpdatePathAssistanceSlider(float v, Slider sl)
     {
         sl.GetComponentsInChildren<TMPro.TextMeshProUGUI>()[1].text=v.ToString("0.0");
     }
     
     //Actually send changed assistance value (on slider release only)
-    public void ChangePathAssistance(float v, Slider sl)
+    void ChangePathAssistance(float v, Slider sl)
     {
         sl.GetComponentsInChildren<TMPro.TextMeshProUGUI>()[1].text=v.ToString("0.0");
         double [] p = {v};
@@ -476,9 +490,6 @@ public class SceneManager : MonoBehaviour
                 GameObject.Find("ConnectSuccessSnd").GetComponent<AudioSource>().Play();
                 bt.GetComponentInChildren<Text>().text = "Disconnect";
                 enablePanel("SessionPanel", true);
-                SD = new SessionData(0); //TODO at patient selection
-                currentActivity = new ActivityData("None", -1, -1);
-                enablePanel("ControlPanel", true);
             }
         }
         else
@@ -489,6 +500,27 @@ public class SceneManager : MonoBehaviour
         }
     }
     
+    //Patient selected and start session pressed
+    void StartSession(Button bt)
+    {
+        //Cleasr session panel
+        GameObject p=GameObject.Find("ActivitiesList");
+        foreach(Transform child in p.transform)
+        {
+            Destroy(child.gameObject);
+        }
+        int val = GameObject.Find("SessionPanel/PatientsList").GetComponent<TMPro.TMP_Dropdown>().value;
+        //If session already existed: save it first
+        if(!Object.Equals(SD, default(SessionData)))
+        {
+            SD.WriteToXML();
+        }
+        SD = new SessionData(val);
+        currentActivity = new ActivityData("None", -1, -1);
+        GameObject.Find("CurrentActivityTxt").GetComponentInChildren<TMPro.TextMeshProUGUI>().text = "";
+        enablePanel("ControlPanel", true);
+    }
+    
     void Quit()
     {
         Application.Quit();
@@ -496,7 +528,13 @@ public class SceneManager : MonoBehaviour
     
     void OnApplicationQuit() 
     {
-        SD.WriteToXML();
+        //TODO: check if exists!
+        //TODO: put one when change patient
+        //Write session to file if exists
+        if(!Object.Equals(SD, default(SessionData)))
+        {
+            SD.WriteToXML();
+        }
         if (Robot.IsInitialised())
         {
             GoGrav(.0);

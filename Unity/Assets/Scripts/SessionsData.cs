@@ -62,7 +62,9 @@ namespace SessionsData
         
         public void WriteToXML()
         {
-            string filename = "Patient"+patient_id.ToString("00")+"_"+start_time.ToString("dd-MM-yy_HH-mm-ss");
+            string folder = "Patient"+patient_id.ToString("00");
+            Directory.CreateDirectory(folder);
+            string filename = folder+"/Patient"+patient_id.ToString("00")+"_"+start_time.ToString("dd-MM-yy_HH-mm-ss");
             XmlSerializer writer = new XmlSerializer(activities.GetType());
             StreamWriter file = new StreamWriter(filename+".xml");
             writer.Serialize(file, activities);
