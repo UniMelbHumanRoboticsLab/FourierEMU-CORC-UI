@@ -100,19 +100,34 @@ namespace CORC
         {
             Initialised = false;
         }
-
+        
+        /// <summary>
+        /// Set the logging file and write headers to it
+        /// </summary>
         public bool SetLoggingFile(string filename)
         {
             LoggingFilename = filename;
-            //Create file and write header
-            using (Client.LogFileStream = new StreamWriter(LoggingFilename))
+            //Create file and write header (and keep it open)
+            Client.LogFileStream = new StreamWriter(LoggingFilename);
+            foreach (string key in State.ItemsOrder)
             {
-                foreach (string key in State.ItemsOrder)
-                {
-                    Client.LogFileStream.Write(key + ",");
-                }
-                return true;
+                Client.LogFileStream.Write(key + ",");
             }
+            Client.LogFileStream.Write("\n");
+            return true;
+        }
+        
+        /// <summary>
+        /// Start or stop logging to file. Use SetLoggingFile() first to set a logging file.
+        /// </summary>
+        public bool SetLogging(bool v)
+        {
+            if(LoggingFilename != "")
+            {
+                return Client.SetLogging(v);
+            }
+            
+            return false;
         }
 
         /// <summary>
@@ -148,6 +163,7 @@ namespace CORC
         /// </summary>
         public void Disconnect()
         {
+            SetLogging(false);
             Client.Disconnect();
             Initialised = false;
         }

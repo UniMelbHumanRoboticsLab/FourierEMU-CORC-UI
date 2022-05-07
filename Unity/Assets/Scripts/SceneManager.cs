@@ -3,6 +3,9 @@ using UnityEngine.UI;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.EventSystems;
+using System;
+using System.Text;
+using System.IO;
 using CORC;
 using SessionsData;
 
@@ -28,8 +31,8 @@ public class SceneManager : MonoBehaviour
     {
         //Admin panel elements
         InputField IPInput = GameObject.Find("AdminPanel/IPInput").GetComponent<InputField>();
-        IPInput.text = "192.168.7.2";
-        //IPInput.text = "127.0.0.1";
+        //IPInput.text = "192.168.7.2";
+        IPInput.text = "127.0.0.1";
         
         Button ConnectBt = GameObject.Find("AdminPanel/ConnectBt").GetComponent<Button>();
         ConnectBt.onClick.AddListener(() => { Connect(ConnectBt, IPInput); });
@@ -91,9 +94,6 @@ public class SceneManager : MonoBehaviour
         //del pt
         Button DelPtBt = GameObject.Find(bt_path+"DelPtBt").GetComponent<Button>();
         DelPtBt.onClick.AddListener(() => { DelPt(DelPtBt); });
-        
-        //TODO: excepetion/error and proper naming and logging values
-        //Robot.SetLoggingFile("mylog.csv");
         
         //Disable panels
         enablePanel("SessionPanel", false);
@@ -441,12 +441,6 @@ public class SceneManager : MonoBehaviour
             GameObject.Find("CmdFailSnd").GetComponent<AudioSource>().Play();
         }
     }
-
-    void GTNSCommand()
-    {
-        Robot.SendCmd("GTNS");
-        StartCoroutine(UpdateRetCmd());
-    }
     
     void SendCommand(Button CmdBt, InputField InputCmd)
     {
@@ -555,6 +549,14 @@ public class SceneManager : MonoBehaviour
         currentActivity = new ActivityData("None", -1, -1);
         GameObject.Find("CurrentActivityTxt").GetComponentInChildren<TMPro.TextMeshProUGUI>().text = "";
         enablePanel("ControlPanel", true);
+        
+        //Robot logging file
+        string folder = "Patient"+val.ToString("00");
+        Directory.CreateDirectory(folder);
+        string filename = folder+"/Patient"+val.ToString("00")+"_"+DateTime.Now.ToString("dd-MM-yy_HH-mm-ss");
+        Robot.SetLogging(false);
+        Robot.SetLoggingFile(filename+".csv");
+        Robot.SetLogging(true);
     }
     
     void Quit()
@@ -565,7 +567,7 @@ public class SceneManager : MonoBehaviour
     void OnApplicationQuit() 
     {
         //Write session to file if exists
-        if(!Object.Equals(SD, default(SessionData)))
+        if(SD.activities!=null)
         {
             SD.WriteToXML();
         }

@@ -69,7 +69,8 @@ namespace CORC
             Port = port;
             try
             {
-                client.Connect(ip, Port);
+                //client.Connect(ip, Port);
+                client.ConnectAsync(ip, Port).Wait(TimeSpan.FromSeconds(2)); //async (not really) used only to specify a timeoout
             }
             catch (SocketException)
             {
@@ -117,6 +118,10 @@ namespace CORC
         public bool SetLogging(bool val)
         {
             Logging = val;
+            if(!Logging) //i.e. stop logging
+            {
+               LogFileStream.Dispose();
+            }
             return Logging;
         }
 
@@ -303,11 +308,9 @@ namespace CORC
                                     if (Logging)
                                     {
                                         //Write to file
-                                        using (LogFileStream)
-                                        {
-                                            for (int i = 0; i < nbValuesToReceive; i++)
-                                                LogFileStream.Write(ReceivedValues[i] + ",");
-                                        }
+                                        for (int i = 0; i < nbValuesToReceive-1; i++) 
+                                            LogFileStream.Write((float)ReceivedValues[i] + ",");
+                                        LogFileStream.Write((float)ReceivedValues[nbValuesToReceive-1] + "\n");
                                     }
 
                                 }
