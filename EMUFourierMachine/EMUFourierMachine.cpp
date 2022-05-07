@@ -23,23 +23,6 @@ bool endCalib(StateMachine & sm) {
     return (sm.state<M3CalibState>("CalibState"))->isCalibDone();
 }
 
-bool goToNextState(StateMachine & SM) {
-    EMUFourierMachine & sm = static_cast<EMUFourierMachine &>(SM); //Cast to specific StateMachine type
-
-    //keyboard or joystick press
-    if ( (sm.robot()->joystick->isButtonTransition(3)>0 || sm.robot()->keyboard->getNb()==1) )
-        return true;
-
-    //Check incoming command requesting state change
-    if ( sm.UIserver->isCmd("GONS") ) {
-        sm.UIserver->sendCmd(string("OKNS"));
-        return true;
-    }
-
-    //Otherwise false
-    return false;
-}
-
 bool goToLock(StateMachine & SM) {
     EMUFourierMachine & sm = static_cast<EMUFourierMachine &>(SM); //Cast to specific StateMachine type
 
@@ -222,16 +205,6 @@ bool updateMass(StateMachine & SM) {
         }
     }
 
-    return false;
-}
-
-bool standby(StateMachine & SM) {
-    EMUFourierMachine & sm = static_cast<EMUFourierMachine &>(SM); //Cast to specific StateMachine type
-
-    if (sm.robot()->keyboard->getQ()==1 || sm.UIserver->isCmd("GOST") ) {
-        sm.UIserver->sendCmd(string("OKST"));
-        return true;
-    }
     return false;
 }
 
