@@ -1,8 +1,9 @@
 # FourierEMU-CORC-UI
-UI (Unity) and CORC stateMachine for Fourier EMU.
+UI (Unity) and [CORC](https://github.com/UniMelbHumanRoboticsLab/CANOpenRobotController) stateMachine for Fourier EMU.
 
  - Unity project within Unity folder (!)
  - CORC stateMachine in EMUFourierMachine: CORC CMakeFile required to point to this folder for compilation
+ - Communication relies on custom [FLNL library](https://github.com/vcrocher/libFLNL) included in CORC
 
 ## List of commands
 Communication commands from the UI side to the CORC state machine:
