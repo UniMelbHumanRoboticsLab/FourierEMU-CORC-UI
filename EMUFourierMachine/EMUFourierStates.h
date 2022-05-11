@@ -116,6 +116,11 @@ class M3LockState : public EMUFourierState {
     void entryCode(void);
     void duringCode(void);
     void exitCode(void);
+
+   private:
+    VM3 X0;
+    double k = 1100.;                 //! Impedance proportional gain (spring)
+    double d = 3.;                   //! Impedance derivative gain (damper)
 };
 
 
@@ -224,7 +229,9 @@ class M3MinJerkPosition: public M3PtToPt {
     void exitCode(void);
 
    private:
-    float k_i=1.; //! Integral gain
+    //float k_i=1.; //! Integral gain
+    double k = 1100.;                 //! Impedance proportional gain (spring)
+    double d = 3.;                   //! Impedance derivative gain (damper)
 };
 
 

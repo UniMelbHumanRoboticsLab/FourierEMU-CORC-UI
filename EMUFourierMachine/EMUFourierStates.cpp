@@ -79,23 +79,57 @@ void M3CalibState::exitCode(void) {
 
 
 void M3LockState::entryCode(void) {
-    robot->initVelocityControl();
-    robot->setJointVelocity(VM3::Zero());
+    //robot->initTorqueControl();
+    robot->setEndEffForceWithCompensation(VM3::Zero(), false);
+    //robot->initVelocityControl();
+    //robot->setJointVelocity(VM3::Zero());
 
     sm->Command = 5;
     sm->Contribution = .0;
     sm->MvtProgress = .0;
+
+    X0 = robot->getEndEffPosition();
 }
 void M3LockState::duringCode(void) {
-    robot->setEndEffVelocity(VM3::Zero());
+    //robot->setEndEffVelocity(VM3::Zero());
+
+    //Impedance on point
+    Eigen::Matrix3d K = k*Eigen::Matrix3d::Identity();
+    Eigen::Matrix3d D = d*Eigen::Matrix3d::Identity();
+    VM3 Fd = impedance(K, D, X0, robot->getEndEffPosition(), robot->getEndEffVelocity());
+    robot->setEndEffForceWithCompensation(Fd, false);
+
+
+    /*
+    //K tuning
+    if(robot->keyboard->getS()) {
+        k -= 5;
+        std::cout << "K=" << k << " D=" << d<< std::endl;
+    }
+    if(robot->keyboard->getW()) {
+        k += 5;
+        std::cout << "K=" << k << " D=" << d<< std::endl;
+    }
+
+    //D tuning
+    if(robot->keyboard->getD()) {
+        d -= 1;
+        std::cout << "K=" << k << " D=" << d<< std::endl;
+    }
+    if(robot->keyboard->getA()) {
+        d += 1;
+        std::cout << "K=" << k << " D=" << d<< std::endl;
+    }*/
 }
 void M3LockState::exitCode(void) {
-    robot->setEndEffVelocity(VM3::Zero());
+    //robot->setEndEffVelocity(VM3::Zero());
+    robot->setEndEffForceWithCompensation(VM3::Zero(), false);
 }
 
 
 void M3MassCompensation::entryCode(void) {
-    robot->initTorqueControl();
+    //robot->initTorqueControl();
+    robot->setEndEffForceWithCompensation(VM3::Zero(), false);
     sm->Command = 2;
     sm->Contribution = .0;
     sm->MvtProgress = .0;
@@ -136,7 +170,7 @@ void M3MassCompensation::exitCode(void) {
 
 
 void M3PathState::entryCode(void) {
-    robot->initTorqueControl();
+    //robot->initTorqueControl();
     robot->setEndEffForceWithCompensation(VM3::Zero(), false);
 
     sm->Command = 3;
@@ -242,9 +276,10 @@ void M3PathState::exitCode(void) {
 
 void M3MinJerkPosition::entryCode(void) {
     //Setup velocity control for position over velocity loop
-    robot->initVelocityControl();
+    /*robot->initVelocityControl();
     robot->setJointVelocity(VM3::Zero());
-    k_i=1.;
+    k_i=1.;*/
+    robot->setEndEffForceWithCompensation(VM3::Zero(), false);
 
     sm->Command = 4;
     sm->Contribution = .0;
@@ -270,8 +305,18 @@ void M3MinJerkPosition::duringCode(void) {
     VM3 Xd, dXd;
     //Compute current desired interpolated point
     status=JerkIt(Xi, Xf, T, running()-startTime, Xd, dXd);
-    //Apply position control
-    robot->setEndEffVelocity(dXd+k_i*(Xd-robot->getEndEffPosition()));
+
+    /*Apply position control
+    robot->setEndEffVelocity(dXd+k_i*(Xd-robot->getEndEffPosition()));*/
+    //Impedance on current point
+    Eigen::Matrix3d K = k*Eigen::Matrix3d::Identity();
+    Eigen::Matrix3d D = d*Eigen::Matrix3d::Identity();
+    VM3 Fd = impedance(K, D, Xd, robot->getEndEffPosition(), robot->getEndEffVelocity(), dXd);
+    robot->setEndEffForceWithCompensation(Fd, false);
+
+    //TODO: smooth transition between pts
+    if(status>0.99 || status<0.01)
+        std:cout << status << " " << Fd.transpose() << "  " << Xd.transpose() << "  " << dXd.transpose() << endl;
 
     //Have we reached a point? And not currently feeding the pts list
     if(status>=1. && !stop) {
@@ -310,5 +355,6 @@ void M3MinJerkPosition::duringCode(void) {
     }
 }
 void M3MinJerkPosition::exitCode(void) {
-    robot->setJointVelocity(VM3::Zero());
+    //robot->setJointVelocity(VM3::Zero());
+    robot->setEndEffForceWithCompensation(VM3::Zero());
 }

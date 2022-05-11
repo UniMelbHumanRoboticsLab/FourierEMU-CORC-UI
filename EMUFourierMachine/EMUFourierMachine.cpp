@@ -6,7 +6,7 @@ bool goToCalib(StateMachine & SM) {
     EMUFourierMachine & sm = static_cast<EMUFourierMachine &>(SM); //Cast to specific StateMachine type
 
     //keyboard or joystick press
-    if ( (sm.robot()->joystick->isButtonTransition(3)>0 || sm.robot()->keyboard->getNb()==1) )
+    if ( sm.robot()->keyboard->getKeyUC()=='C' )
         return true;
 
     //Check incoming command requesting state change
@@ -27,7 +27,7 @@ bool goToLock(StateMachine & SM) {
     EMUFourierMachine & sm = static_cast<EMUFourierMachine &>(SM); //Cast to specific StateMachine type
 
     //keyboard press
-    if ( sm.robot()->keyboard->getKeyUC()=='L' )
+    if ( sm.robot()->joystick->isButtonTransition(3)>0 || sm.robot()->keyboard->getKeyUC()=='L' )
         return true;
 
     //Check incoming command requesting state change
@@ -92,6 +92,10 @@ bool goToJerk(StateMachine & SM) {
             return false;
         }
     }
+    else {
+        if ( sm.robot()->keyboard->getKeyUC()=='J' )
+            return true;
+    }
 
     return false;
 }
@@ -131,6 +135,10 @@ bool goToPath(StateMachine & SM) {
             return false;
         }
     }
+    else {
+        if ( sm.robot()->keyboard->getKeyUC()=='P' )
+            return true;
+    }
 
     return false;
 }
@@ -153,6 +161,10 @@ bool goToGravity(StateMachine & SM) {
             sm.UIserver->sendCmd(string("ERGR"));
             return false;
         }
+    }
+    else {
+        if ( sm.robot()->keyboard->getKeyUC()=='D' )
+            return true;
     }
 
     return false;
