@@ -201,18 +201,20 @@ void M3PathState::duringCode(void) {
     //Progress along path
     double status = sign((X-Xi).dot(PathUnitV))*(Xd-Xi).norm()/(Xf-Xi).norm();
     double b=0;
+    //Assistance progressive up and down in first and last 10% of movement
+    if(status>=0.1 && status<0.9) {
+        b = 1.0;
+    }
+    if(status<0.1) {
+        b = status*10.;
+    }
+    if(status>0.9) {
+        b = (1-status)*10.;
+    }
     if(status<=0) {
         //"Before" Xi
         Xd = Xi;
         b = 0.;
-    }
-    //TODO: update to match current version on Labview one
-    if(status>=0 && status<1) {
-        //In between Xi and Xf
-        if(status>0.5)
-            b = 1-status;
-        else
-            b = status;
     }
     if(status>=1) {
         //After "Xf"
