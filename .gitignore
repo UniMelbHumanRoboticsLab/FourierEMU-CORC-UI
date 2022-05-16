@@ -79,5 +79,5 @@ crashlytics-build.properties
 *.cbp
 *.layout
 
-#Also ignore main CORC stack
-/CANOpenRobotController/
+##Also ignore main CORC stack
+#/CANOpenRobotController/
