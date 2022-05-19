@@ -213,7 +213,7 @@ class M3PathState : public M3PtToPt {
    private:
     double k = 600;                 //! Impedance proportional gain (spring)
     double d = 6;                   //! Impedance derivative gain (damper)
-    double viscous_assistance=15;   //! Viscous assistance along path
+    double viscous_assistance=0;   //! Viscous assistance along path
 };
 
 
