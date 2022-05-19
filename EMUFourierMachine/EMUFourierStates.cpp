@@ -137,10 +137,6 @@ void M3MassCompensation::entryCode(void) {
 }
 void M3MassCompensation::duringCode(void) {
 
-    //Smooth transition in case a mass is set at startup
-    double settling_time = 3.0;
-    double t=running()>settling_time?1.0:running()/settling_time;
-
     //Bound mass to +-5kg
     if(mass>mass_limit) {
         mass = mass_limit;
@@ -149,8 +145,11 @@ void M3MassCompensation::duringCode(void) {
         mass = -mass_limit;
     }
 
+    //Calculate effective applied mass based on possible transition (change mass
+    applied_mass += sign(mass - applied_mass)*change_mass_rate*dt();
+
     //Apply corresponding force
-    robot->setEndEffForceWithCompensation(VM3(0,0,t*mass*9.8), true);
+    robot->setEndEffForceWithCompensation(VM3(0,0,applied_mass*9.8), true);
 
     //Mass controllable through keyboard inputs
     if(robot->keyboard->getS()) {
