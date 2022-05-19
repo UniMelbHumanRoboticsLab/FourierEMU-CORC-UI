@@ -469,14 +469,14 @@ public class SceneManager : MonoBehaviour
 
     void Lock(Button bt)
     {
-        if(bt.GetComponentInChildren<Text>().text == "Lock") {
+        if(bt.GetComponentInChildren<TMPro.TextMeshProUGUI>().text == "Lock") {
             Robot.SendCmd("GOLO");
-            bt.GetComponentInChildren<Text>().text = "Unlock";
+            bt.GetComponentInChildren<TMPro.TextMeshProUGUI>().text = "Unlock";
             StartCoroutine(UpdateRetCmd());
         }
         else {
             Robot.SendCmd("GOUN");
-            bt.GetComponentInChildren<Text>().text = "Lock";
+            bt.GetComponentInChildren<TMPro.TextMeshProUGUI>().text = "Lock";
             StartCoroutine(UpdateRetCmd());
         }
     }

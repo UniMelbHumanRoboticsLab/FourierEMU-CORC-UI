@@ -326,8 +326,8 @@ void M3MinJerkPosition::duringCode(void) {
         if(trajPtIdx>=trajPts.size()){
             trajPtIdx=0;
         }
-        //From where we are
-        Xi=robot->getEndEffPosition();
+        //From where we were
+        Xi=Xf;
         //to next pt (if it exists)
         if(trajPts.size()>0) {
             Xf=trajPts[trajPtIdx].X;
