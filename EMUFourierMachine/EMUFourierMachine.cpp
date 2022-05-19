@@ -206,7 +206,7 @@ bool updateMass(StateMachine & SM) {
         std::shared_ptr<M3MassCompensation> s = sm.state<M3MassCompensation>("StandbyState");
 
         if(params.size() == 1) {
-            if(params[0]>=0. &&  params[0]<3.) {
+            if(params[0]>=0. &&  params[0]<=3.) {
                 s->setMass(params[0]);
             }
             sm.UIserver->sendCmd(string("OKUM"));
