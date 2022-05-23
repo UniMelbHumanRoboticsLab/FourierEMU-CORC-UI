@@ -99,8 +99,12 @@ namespace CORC
         public void Disconnect()
         {
             Connected = false;
+            Thread.Sleep(100);
+            client.Close();
             if (receptionThread != null)
                 receptionThread.Abort();
+            //Prepare a new client if re-connection required
+            client = new TcpClient();
         }
 
         public bool IsConnected()
@@ -288,7 +292,7 @@ namespace CORC
                     int length;
                     Byte[] bytes = new Byte[MESSAGE_SIZE];
                     // Read incomming stream into byte array
-                    while ((length = stream.Read(bytes, 0, bytes.Length)) != 0 && client.Connected)
+                    while ((length = stream.Read(bytes, 0, bytes.Length)) != 0 && client.Connected && Connected)
                     {
                         if (length == MESSAGE_SIZE)
                         {

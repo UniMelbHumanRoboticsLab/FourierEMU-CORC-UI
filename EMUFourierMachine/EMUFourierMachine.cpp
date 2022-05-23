@@ -303,4 +303,6 @@ void EMUFourierMachine::hwStateUpdate() {
     StateMachine::hwStateUpdate();
     //Also send robot state over network
     UIserver->sendState();
+    //Attempt to reconnect (if not already waiting for connection)
+    UIserver->reconnect();
 }

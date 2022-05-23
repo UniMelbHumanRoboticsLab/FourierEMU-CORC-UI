@@ -20,6 +20,7 @@ public class SceneManager : MonoBehaviour
 
     private double last_t = 0;
     private double last_mvt_nb=0;
+    private bool mvt_progress_50percent = false;
     private Vector3 last_pos;
     
     SessionData SD;
@@ -31,8 +32,8 @@ public class SceneManager : MonoBehaviour
     {
         //Admin panel elements
         InputField IPInput = GameObject.Find("AdminPanel/IPInput").GetComponent<InputField>();
-        IPInput.text = "192.168.7.2";
-        //IPInput.text = "127.0.0.1";
+        //IPInput.text = "192.168.7.2";
+        IPInput.text = "127.0.0.1";
         
         Button ConnectBt = GameObject.Find("AdminPanel/ConnectBt").GetComponent<Button>();
         ConnectBt.onClick.AddListener(() => { Connect(ConnectBt, IPInput); });
@@ -163,12 +164,26 @@ public class SceneManager : MonoBehaviour
     //Update relevant session data: count nv mvts, distance ...
     void updateState()
     {
-        
         //For current activity and overall session
         //Nb mvts count
-        int is_new_mvt = ((int)Robot.State["MvtProgress"][0]) != ((int)last_mvt_nb) ? 1 : 0;
-        currentActivity.nb_mvts += is_new_mvt;
-        SD.nb_mvts += is_new_mvt;
+        
+        if((int)last_mvt_nb == (int)Robot.State["MvtProgress"][0]) //Still in same mvt
+        {
+            double last_p = last_mvt_nb-(int)last_mvt_nb;
+            double p = Robot.State["MvtProgress"][0]-(int)Robot.State["MvtProgress"][0];
+            //Flag set true when crossing 50% of mvt: used to count future mvt
+            if(!mvt_progress_50percent) {
+                mvt_progress_50percent = (last_p<=0.5 && p>0.5) ? true : false;
+            }
+            int is_new_mvt = 0;
+            //If crossing 90% while already crossed 50:
+            if( (last_p<=0.9 && p>0.9) && mvt_progress_50percent) {
+                is_new_mvt = 1;
+                mvt_progress_50percent = false;
+            }
+            currentActivity.nb_mvts += is_new_mvt;
+            SD.nb_mvts += is_new_mvt;
+        }
         last_mvt_nb = Robot.State["MvtProgress"][0];
         //Distance
         Vector3 X = new Vector3((float)Robot.State["X"][0], (float)Robot.State["X"][1], (float)Robot.State["X"][2]);
@@ -469,14 +484,14 @@ public class SceneManager : MonoBehaviour
 
     void Lock(Button bt)
     {
-        if(bt.GetComponentInChildren<TMPro.TextMeshProUGUI>().text == "Lock") {
+        if(bt.GetComponentInChildren<TMPro.TextMeshProUGUI>().text == "Stop\n∩\n▀") {
             Robot.SendCmd("GOLO");
             bt.GetComponentInChildren<TMPro.TextMeshProUGUI>().text = "Unlock";
             StartCoroutine(UpdateRetCmd());
         }
         else {
             Robot.SendCmd("GOUN");
-            bt.GetComponentInChildren<TMPro.TextMeshProUGUI>().text = "Lock";
+            bt.GetComponentInChildren<TMPro.TextMeshProUGUI>().text = "Stop\n∩\n▀";
             StartCoroutine(UpdateRetCmd());
         }
     }

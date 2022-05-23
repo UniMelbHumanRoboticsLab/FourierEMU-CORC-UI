@@ -315,10 +315,6 @@ void M3MinJerkPosition::duringCode(void) {
     VM3 Fd = impedance(K, D, Xd, robot->getEndEffPosition(), robot->getEndEffVelocity(), dXd);
     robot->setEndEffForceWithCompensation(Fd, false);
 
-    //TODO: smooth transition between pts
-    if(status>0.99 || status<0.01)
-        std:cout << status << " " << Fd.transpose() << "  " << Xd.transpose() << "  " << dXd.transpose() << endl;
-
     //Have we reached a point? And not currently feeding the pts list
     if(status>=1. && !stop) {
         //Go to next point
