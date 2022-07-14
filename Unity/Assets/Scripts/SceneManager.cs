@@ -8,16 +8,20 @@ using System.Text;
 using System.IO;
 using CORC;
 using SessionsData;
+using MvtLogging;
 
 public class SceneManager : MonoBehaviour
 {
     public CORCM3_FOURIER Robot;
+    public MvtLogger Logger;
     
     public GameObject Cursor, Arrow;
     
     private Text Status;
     private InputField InputReturnCmd;
+    private Text StatusSensors;
 
+    //Variables to manage mvt progress
     private double last_t = 0;
     private double last_mvt_nb=0;
     private bool mvt_progress_50percent = false;
@@ -32,8 +36,8 @@ public class SceneManager : MonoBehaviour
     {
         //Admin panel elements
         InputField IPInput = GameObject.Find("AdminPanel/IPInput").GetComponent<InputField>();
-        //IPInput.text = "192.168.7.2";
-        IPInput.text = "127.0.0.1";
+        IPInput.text = "192.168.7.2";
+        //IPInput.text = "127.0.0.1";
         
         Button ConnectBt = GameObject.Find("AdminPanel/ConnectBt").GetComponent<Button>();
         ConnectBt.onClick.AddListener(() => { Connect(ConnectBt, IPInput); });
@@ -46,7 +50,10 @@ public class SceneManager : MonoBehaviour
         CmdBt.onClick.AddListener(() => { SendCommand(CmdBt, InputCmd); });
         
         Status = GameObject.Find("AdminPanel/Status").GetComponent<Text>();
+        StatusSensors = GameObject.Find("AdminPanel/StatusSensors").GetComponent<Text>();
         
+        Button InitSensorsBt = GameObject.Find("AdminPanel/InitSensorsBt").GetComponent<Button>();
+        InitSensorsBt.onClick.AddListener(() => { InitSensors(InitSensorsBt); });
         
         //Session state panel
         Button StartSessionBt = GameObject.Find("StartSessionBt").GetComponent<Button>();
@@ -107,7 +114,7 @@ public class SceneManager : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        Status.text = "Status:";
+        Status.text = "EMU status:";
         if (Robot.IsInitialised())
         {
             //Update status text box
@@ -533,6 +540,17 @@ public class SceneManager : MonoBehaviour
         {
             Robot.Init(ip.text);
             if(Robot.IsInitialised()) {
+                Logger = new MvtLogger(Robot);
+                if(Logger.InitSensors())
+                {
+                    StatusSensors.color = Color.white;
+                    StatusSensors.text = "Sensors: Connected";
+                }
+                else
+                {
+                    StatusSensors.color = Color.red;
+                    StatusSensors.text = "Sensors: NOT connected";
+                }
                 GameObject.Find("ConnectSuccessSnd").GetComponent<AudioSource>().Play();
                 bt.GetComponentInChildren<Text>().text = "Disconnect";
                 enablePanel("SessionPanel", true);
@@ -543,6 +561,20 @@ public class SceneManager : MonoBehaviour
             Robot.Disconnect();
             bt.GetComponentInChildren<Text>().text = "Connect";
             enablePanel("ControlPanel", false);
+        }
+    }
+    
+    void InitSensors(Button InitSensorsBt)
+    {
+        if(Logger.InitSensors())
+        {
+            StatusSensors.color = Color.white;
+            StatusSensors.text = "Sensors: Connected";
+        }
+        else
+        {
+            StatusSensors.color = Color.red;
+            StatusSensors.text = "Sensors: NOT connected";
         }
     }
     
@@ -560,19 +592,29 @@ public class SceneManager : MonoBehaviour
         if(SD.activities!=null)
         {
             SD.WriteToXML();
+            Logger.Stop();
         }
         SD = new SessionData(val);
         currentActivity = new ActivityData("None", -1, -1);
         GameObject.Find("CurrentActivityTxt").GetComponentInChildren<TMPro.TextMeshProUGUI>().text = "";
         enablePanel("ControlPanel", true);
         
-        //Robot logging file
+        //MvtLogging file TODO: embed SessionData ??
         string folder = "Patient"+val.ToString("00");
         Directory.CreateDirectory(folder);
         string filename = folder+"/Patient"+val.ToString("00")+"_"+DateTime.Now.ToString("dd-MM-yy_HH-mm-ss");
-        Robot.SetLogging(false);
-        Robot.SetLoggingFile(filename+".csv");
-        Robot.SetLogging(true);
+        if(Logger.Init(filename+".csv"))
+        {
+            Logger.Start();
+            StatusSensors.color = Color.white;
+            StatusSensors.text = "Sensors: Connected. Logging.";
+        }
+        else
+        {
+            StatusSensors.color = Color.red;
+            StatusSensors.text = "Sensors: Failed logger init";
+            Debug.Log("Init logger error");
+        }
     }
     
     void Quit()
@@ -586,6 +628,7 @@ public class SceneManager : MonoBehaviour
         if(SD.activities!=null)
         {
             SD.WriteToXML();
+            Logger.Stop();
         }
         if (Robot.IsInitialised())
         {

@@ -6,12 +6,19 @@ using System.Xml.Serialization;
 using System.Text;
 using System.IO;
 
-
+/// <summary>
+/// Set of structures to store and save (to XML) activities and settings data from a session
+/// </summary>
 namespace SessionsData
 {
+    /// <summary>
+    /// Allow to store on activity data
+    /// </summary>
     public struct ActivityData
     {
-        //Initialise to 0
+        /// <summary>
+        /// Intialise the activity of type t with assistance level a and gravity compensation g
+        /// </summary>
         public ActivityData(string t, double a, double g)
         {
             type = t;
@@ -23,12 +30,18 @@ namespace SessionsData
             start_time = DateTime.Now;
         }
         
+        /// <summary>
+        /// Set overall time of activity (at the end)
+        /// </summary>
         public void CalculateFinalTime()
         {
             TimeSpan interval = DateTime.Now - start_time;
             time_s = (float)interval.TotalSeconds;
         }
         
+        /// <summary>
+        /// Current running time of the activty in seconds
+        /// </summary>
         public double GetTime()
         {
             TimeSpan interval = DateTime.Now - start_time;
@@ -44,9 +57,14 @@ namespace SessionsData
         public double gravity;
     }
 
+    /// <summary>
+    /// Allow to store a session containing multiple activities and basic information
+    /// </summary>
     public struct SessionData
     {
-        //Initialise to 0
+        /// <summary>
+        /// Create and initialise the session for patient id p
+        /// </summary>
         public SessionData(int p)
         {
             patient_id = p;
@@ -56,18 +74,27 @@ namespace SessionsData
             nb_mvts = 0;
         }
         
+        /// <summary>
+        /// Add an activty (done) to the session
+        /// </summary>
         public void AddActivity(ActivityData a)
         {
             a.CalculateFinalTime();
             activities.Add(a);
         }
         
+        /// <summary>
+        /// Current running time of the session in minutes
+        /// </summary>
         public double GetTimeMin()
         {
             TimeSpan interval = DateTime.Now - start_time;
             return interval.TotalMinutes;
         }
         
+        /// <summary>
+        /// Write the session information to an XML file (filename based on date and patient id)
+        /// </summary>
         public void WriteToXML()
         {
             string folder = "Patient"+patient_id.ToString("00");
