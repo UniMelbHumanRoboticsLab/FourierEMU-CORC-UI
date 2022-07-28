@@ -18,6 +18,7 @@ namespace MvtLogging
 		private bool recordingRunning = false;
 		private Thread recordingThread = null;
 		private CORCM3_FOURIER robot;
+		private FLNLClient mediaPipe;
 		private trakSTARSensors trakstar;
 		private int nbTrakstarSensors = 3;
 		
@@ -29,6 +30,9 @@ namespace MvtLogging
 			//M3 robot
 			robot = r;
 			
+			//Connection to local Dept camera python script
+			mediaPipe = new FLNLClient();
+			
 			//trakSTAR
 			trakstar = new trakSTARSensors();
 		}
@@ -36,6 +40,10 @@ namespace MvtLogging
 		public bool InitSensors()
 		{
 			Stop();
+			
+			if(mediaPipe.Connect("127.0.0.1", 2042)==false)
+				return false;
+
 			return trakstar.Init();
 		}
 		
@@ -47,7 +55,7 @@ namespace MvtLogging
 		public bool Init(string filename)
 		{
 			//Init trakSTAR
-			if(trakstar.IsInitialised() && robot.IsInitialised())
+			if(mediaPipe.IsConnected() && trakstar.IsInitialised() && robot.IsInitialised())
 			{
 				//Create file and header
 				logFileStream = new StreamWriter(filename);
@@ -68,6 +76,9 @@ namespace MvtLogging
 			{
 				recording = true;
 				recordingRunning = true;
+				
+				//Start MediaPipe stream
+				mediaPipe.SendCmd("STA".ToCharArray());
 				
 				//Start recording thread
 				recordingThread = new Thread(new ThreadStart(RecordSamples));
@@ -101,6 +112,9 @@ namespace MvtLogging
 			Thread.Sleep(100);
             if (recordingThread != null)
                 recordingThread.Abort();
+				
+			//Stop MediaPipe stream
+			mediaPipe.SendCmd("STO".ToCharArray());
 
 			//Close file
 			if (logFileStream!=null)
@@ -140,7 +154,20 @@ namespace MvtLogging
 						logFileStream.Write("," + (float)r.x + "," + (float)r.y + "," + (float)r.z + "," + (float)r.a + "," + (float)r.e + "," + (float)r.r);
 					}
 					
-					//Write depthcam output??
+					//Write mediaPipe output
+					if(mediaPipe.IsReceivedValues())
+					{
+						double[] vals = mediaPipe.GetReceivedValues();
+						foreach(double val in vals)
+						{
+							logFileStream.Write("," + (float)val);
+						}
+					}
+					else
+					{
+						//Write NaN instead	
+						//TODO
+					}
 					
 					logFileStream.Write("\n");
 				}
