@@ -3,6 +3,7 @@ UI (Unity) and [CORC](https://github.com/UniMelbHumanRoboticsLab/CANOpenRobotCon
 
  - Unity project within [Unity folder](./Unity)
  - CORC stateMachine in EMUFourierMachine: CORC CMakeFile required to point to this folder for compilation
+ - A standalone Python program using MediaPipe for arm pose tracking (see [MediaPipe folder](./MediaPipe)
  - Communication relies on custom [FLNL library](https://github.com/vcrocher/libFLNL) included in CORC
 
 ## List of commands
@@ -21,3 +22,6 @@ Communication commands from the UI side to the CORC state machine:
 *Commands return ER__ only if wrong/inconsistent number of parameters are provided but OK__ if command is applied but parameter value is out of bound (and so saturated or not applied). TL;DR: ER represents only communication errors, nothing else.
 
 See EMUFourierMachine constructor for allowed transitions.
+
+
+

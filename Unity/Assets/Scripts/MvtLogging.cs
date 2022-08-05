@@ -23,8 +23,8 @@ namespace MvtLogging
 		private int nbTrakstarSensors = 3;
 		
 		public StreamWriter logFileStream;
-		private string fileHeader = "#t (abs), t, X_1, X_2, X_3, dX_1, dX_2, dX_3, F_1, F_2, F_3, Cmd, MvtProg, Contrib, S1_x, S1_y, S1_z, S1_a, S1_e, S1_r, S2_x, S2_y, S2_z, S2_a, S2_e, S2_r, S3_x, S3_y, S3_z, S3_a, S3_e, S3_r\n"; //Ooohhh ! this is rigid and ugly!
-		
+		private int nbValuesFromMediapipe = 1 + 3*8; //Nb of values to log from mediapipe server
+		private string fileHeader = "#t (abs), t, X_1, X_2, X_3, dX_1, dX_2, dX_3, F_1, F_2, F_3, Cmd, MvtProg, Contrib, S1_x, S1_y, S1_z, S1_a, S1_e, S1_r, S2_x, S2_y, S2_z, S2_a, S2_e, S2_r, S3_x, S3_y, S3_z, S3_a, S3_e, S3_r,armSide(0:left 1:right), l_eye_x, l_eye_y, l_eye_z, r_eye_x, r_eye_y, r_eye_z, l_hip_x, l_hip_y, l_hip_z, r_hip_x, r_hip_y, r_hip_z, l_sh_x, l_sh_y, l_sh_z, r_sh_x, r_sh_y, r_sh_z, el_x, el_y, el_z, wr_x, wr_y, wr_z \n"; //Ooohhh ! this is rigid and ugly!
 		public MvtLogger(CORCM3_FOURIER r)
 		{
 			//M3 robot
@@ -37,19 +37,26 @@ namespace MvtLogging
 			trakstar = new trakSTARSensors();
 		}
 		
+		~MvtLogger()
+		{
+			Stop();
+			mediaPipe.SendCmd("DIS".ToCharArray());
+		}
+		
 		public bool InitSensors()
 		{
 			Stop();
 			
-			if(mediaPipe.Connect("127.0.0.1", 2042)==false)
-				return false;
+			if(!mediaPipe.IsConnected())
+			{ 
+				if(mediaPipe.Connect("127.0.0.1", 2042)==false)
+				{
+					Debug.Log("MediaPipe server error.");
+					return false;
+				}
+			}
 
 			return trakstar.Init();
-		}
-		
-		~MvtLogger()
-		{
-			Stop();
 		}
 		
 		public bool Init(string filename)
@@ -65,6 +72,12 @@ namespace MvtLogging
 			}
 			else
 			{
+				if(!mediaPipe.IsConnected())
+					Debug.Log("MediaPipe server error.");
+				if(!trakstar.IsInitialised())
+					Debug.Log("trakSTAR error.");
+				if(!robot.IsInitialised())
+					Debug.Log("Robot error.");
 				readyToRecord = false;
 			}
 			return readyToRecord;
@@ -166,7 +179,10 @@ namespace MvtLogging
 					else
 					{
 						//Write NaN instead	
-						//TODO
+						for (int i=0;i<nbValuesFromMediapipe;i++)
+						{
+							logFileStream.Write(", nan");
+						}
 					}
 					
 					logFileStream.Write("\n");
