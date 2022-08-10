@@ -170,6 +170,24 @@ bool goToGravity(StateMachine & SM) {
     return false;
 }
 
+//Exit CORC app properly
+bool quit(StateMachine & SM) {
+    EMUFourierMachine & sm = static_cast<EMUFourierMachine &>(SM); //Cast to specific StateMachine type
+
+    //keyboard press
+    if ( sm.robot()->keyboard->getKeyUC()=='Q' ) {
+        std::raise(SIGTERM); //Clean exit
+        return true;
+    }
+
+    //Check incoming command requesting state change
+    if ( sm.UIserver->isCmd("QUIT") ) {
+        sm.UIserver->sendCmd(string("OKQU"));
+        std::raise(SIGTERM); //Clean exit
+        return true;
+    }
+}
+
 //Fake transition (return true all the time) used to update the Path state parameter
 bool updatePath(StateMachine & SM) {
     EMUFourierMachine & sm = static_cast<EMUFourierMachine &>(SM); //Cast to specific StateMachine type
@@ -253,6 +271,8 @@ EMUFourierMachine::EMUFourierMachine() {
     addTransition("MinJerkState", &goToLock, "LockState");
     addTransition("StandbyState", &goToLock, "LockState");
     addTransition("LockState", &goToUnlock, "StandbyState");
+
+    addTransitionFromAny(&quit, "StandbyState");
 }
 EMUFourierMachine::~EMUFourierMachine() {
 }
@@ -273,7 +293,8 @@ void EMUFourierMachine::init() {
         logHelper.add(robot()->getEndEffAcceleration(), "ddX");
         logHelper.add(robot()->getEndEffVelocityFiltered(), "dXFilt");
         #ifdef NOROBOT
-            UIserver = std::make_shared<FLNLHelper>(*robot(), "127.0.0.1");
+            //UIserver = std::make_shared<FLNLHelper>(*robot(), "127.0.0.1");
+            UIserver = std::make_shared<FLNLHelper>(*robot(), "192.168.7.2");
         #else
             UIserver = std::make_shared<FLNLHelper>(*robot(), "192.168.7.2");
         #endif // NOROBOT
