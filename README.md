@@ -18,6 +18,7 @@ Communication commands from the UI side to the CORC state machine:
 |      GOGR|    [mass]                            | OKGR/ERGR* |  Go to Deweighting state with specified mass compensation          |
 |      UDPA| [assistance]                         | OKUP/ERUD* |  Update Path (guidance) assistance viscosity. In path state only.  |
 |      UDMA|    [mass]                            | OKUM/ERUD* |  Update mass compensation. In Deweigthing state only.              |
+|      QUIT| /                                    | OKQU       |  Quit the CORC app properly.                                       |
 
 *Commands return ER__ only if wrong/inconsistent number of parameters are provided but OK__ if command is applied but parameter value is out of bound (and so saturated or not applied). TL;DR: ER represents only communication errors, nothing else.
 
