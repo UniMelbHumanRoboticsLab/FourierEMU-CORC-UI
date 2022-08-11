@@ -186,6 +186,8 @@ bool quit(StateMachine & SM) {
         std::raise(SIGTERM); //Clean exit
         return true;
     }
+
+    return false;
 }
 
 //Fake transition (return true all the time) used to update the Path state parameter
@@ -273,6 +275,7 @@ EMUFourierMachine::EMUFourierMachine() {
     addTransition("LockState", &goToUnlock, "StandbyState");
 
     addTransitionFromAny(&quit, "StandbyState");
+    addTransition("StandbyState", &quit, "StandbyState"); //From any does not apply to self (destination state)
 }
 EMUFourierMachine::~EMUFourierMachine() {
 }
