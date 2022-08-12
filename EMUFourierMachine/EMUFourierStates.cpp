@@ -32,6 +32,7 @@ void M3CalibState::entryCode(void) {
     robot->decalibrate();
     robot->initTorqueControl();
     robot->printJointStatus();
+    qi=robot->getPosition();
     sm->Command = 1;
     sm->Contribution = .0;
     sm->MvtProgress = .0;
@@ -46,7 +47,7 @@ void M3CalibState::duringCode(void) {
     double b = 7.;
     for(unsigned int i=0; i<3; i++) {
         tau(i) = std::min(std::max(8 - b * vel(i), .0), 8.);
-        if(stop_reached_time(i)>0.5) {
+        if(stop_reached_time(i)>0.5 && robot->getPosition()!=qi) {
             at_stop[i]=true;
         }
         if(vel(i)<0.01) {
