@@ -23,7 +23,7 @@ public class SceneManager : MonoBehaviour
 
     //Variables to manage mvt progress
     private double last_t = 0;
-    private double last_mvt_nb=0;
+    private double last_mvt_nb = 0;
     private bool mvt_progress_50percent = false;
     private Vector3 last_pos;
     
@@ -222,7 +222,7 @@ public class SceneManager : MonoBehaviour
                 
                 act_txt += "\t" + 
                 currentActivity.GetTime().ToString("0") + "s\t" + 
-                currentActivity.nb_mvts + "Mvts (" + currentActivity.distance.ToString("0.0") + "m)";
+                currentActivity.nb_mvts + "mvts (" + currentActivity.distance.ToString("0.0") + "m)";
                 
                 GameObject.Find("CurrentActivityTxt").GetComponentInChildren<TMPro.TextMeshProUGUI>().text = act_txt;
             }
@@ -230,7 +230,7 @@ public class SceneManager : MonoBehaviour
             //of overall session
             GameObject.Find("SessionTxt").GetComponentInChildren<TMPro.TextMeshProUGUI>().text = "Session:\t" + 
             SD.GetTimeMin().ToString("0") + "min\t" + 
-            SD.nb_mvts + "Mvts (" + SD.distance.ToString("0.0") + "m)";
+            SD.nb_mvts + "mvts (" + SD.distance.ToString("0.0") + "m)";
         }
         else
         {
@@ -540,7 +540,7 @@ public class SceneManager : MonoBehaviour
         {
             Robot.Init(ip.text);
             if(Robot.IsInitialised()) {
-                Logger = new MvtLogger(Robot);
+                Logger = new MvtLogger(Robot, GameObject.Find("AdminPanel/LogSensors").GetComponent<Text>());
                 if(Logger.InitSensors())
                 {
                     StatusSensors.color = Color.white;
@@ -633,6 +633,7 @@ public class SceneManager : MonoBehaviour
         if (Robot.IsInitialised())
         {
             GoGrav(.0);
+            Robot.SendCmd("QUIT");
             Robot.Disconnect();
         }
     }

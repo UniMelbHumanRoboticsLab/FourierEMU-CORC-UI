@@ -1,7 +1,8 @@
 using System;
 using System.Text;
 using System.Runtime.InteropServices;     // DLL support
-using UnityEngine; //TODO TO remove
+using UnityEngine;
+using UnityEngine.UI;
 
 namespace trakSTAR
 {	
@@ -24,6 +25,7 @@ namespace trakSTAR
 		private ushort maxNbSensors = 4; //Must be 4 (max to be plugged on transmitter) even if less are actually used
 		private string trakSTARiniConfigFile=".\\trakSTAR3SensorsConfig.ini";
 		private bool initialised=false;
+		private Text logText = null;
 		
 		//Imported functions		
 		[DllImport("ATC3DG64.DLL", CallingConvention = CallingConvention.StdCall)]
@@ -44,10 +46,23 @@ namespace trakSTAR
 		[DllImport("ATC3DG64.DLL", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
 		private static extern int GetErrorText(int errorCode, StringBuilder mess, int bufferSize, int message_type/*enum: 0, 1 ??*/);
 		
+		public trakSTARSensors(Text log_txt=null)
+		{
+			logText = log_txt; //Logger textbox
+		}
 		
 		~trakSTARSensors()
 		{
 			Close();
+		}
+		
+		private void Log(string txt)
+		{
+			if(logText)
+			{
+				logText.text="trakSTAR: "+txt+"\n"+logText.text;
+			}
+			Debug.Log("trakSTAR: "+txt);
 		}
 		
 		public bool Init()
@@ -105,7 +120,6 @@ namespace trakSTAR
 			
 			if(ret!="OK")
 			{
-				Debug.Log("trakstar GetRecord error: "+ret);
 				return false;
 			}
 			
@@ -121,14 +135,14 @@ namespace trakSTAR
 		private string errH(int err_code)
 		{
 			if(err_code==0)
-			{			
+			{
 				return new string("OK");
 			}
 			else
 			{
 				StringBuilder err_mess = new StringBuilder(255);
 				GetErrorText(err_code, err_mess, 255, 0);
-				Debug.Log("trakSTAR: "+err_mess.ToString());
+				Log(err_mess.ToString());
 				
 				return err_mess.ToString();
 			}

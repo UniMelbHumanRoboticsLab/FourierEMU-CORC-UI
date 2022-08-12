@@ -10,6 +10,23 @@ import pyrealsense2 as rs2
 #import pupil_apriltags as apriltag
 from FLNL import *
 import keyboard
+from enum import IntEnum
+
+from numpy.linalg import norm, inv
+
+
+## Joints points names to IDs:
+class J(IntEnum):
+    L_Y = 2 #Left eye
+    R_Y = 5 #Right eye
+    L_H = 23 #Left Hip
+    R_H = 24 #Right Hip
+    L_S = 11 #Left Shoulder 
+    R_S = 12 #Right Shoulder 
+    L_E = 13 #Left Elbow
+    R_E = 14 #Right Elbow
+    L_W = 15 #Left Wrist
+    R_W = 16 #Right Wrist
 
 class PoseDetector:
 
@@ -138,6 +155,57 @@ def lowpass(ang1,ang2,ang3,ang4):
         # return tags #TODO
 
 
+#Transform joints coordinates into local shoulder frame
+#the origin frame is defined as center at shoulder point, X Left->Right shoulders, and Z vertical up crossing the in-between eyes point
+def transform3DPoints(pts):
+    #pts=np.array(pts)
+    #print(pts)
+    if(pts[J.L_W]):
+        ##shoulder pt
+        S = np.array(pts[J.L_S])
+        ## elbow
+        E = np.array(pts[J.L_E])
+        ## wrist
+        W = np.array(pts[J.L_W])
+    else:
+        ##shoulder pt
+        S = np.array(pts[J.R_S])
+        ## elbow
+        E = np.array(pts[J.R_E])
+        ## wrist
+        W = np.array(pts[J.R_W])
+    
+    Tc0=np.eye(4)
+    Tc0[0:3,3]=S
+    #shoulder-shoulder vector as X
+    Tc0[0:3,0] = (np.array(pts[J.R_S])-np.array(pts[J.L_S]))/norm(np.array(pts[J.R_S])-np.array(pts[J.L_S]))
+    #eyes mid-point
+    Head = np.array(pts[J.L_Y])+0.5*(np.array(pts[J.R_Y])-np.array(pts[J.L_Y]))
+    #Z vector, head up. Y forward orth to X and Shoulder/head plane
+    Tc0[0:3,1] = np.cross(S-Head, Tc0[0:3,0])
+    Tc0[0:3,1] = Tc0[0:3,1]/norm(Tc0[0:3,1])
+    Tc0[0:3,2] = np.cross(Tc0[0:3,0],Tc0[0:3,1])
+    
+    T0c=inv(Tc0)
+    
+    ## Apply transformation to remaining joints
+    S = np.matmul(T0c, np.append(S,1))[0:3]
+    E = np.matmul(T0c, np.append(E,1))[0:3]
+    W = np.matmul(T0c, np.append(W,1))[0:3]
+    
+    
+    np.set_printoptions(precision=2)
+    np.set_printoptions(suppress=True)
+    print(Tc0)
+    print(E)
+    print(W)
+    
+    return 0
+
+#Compute distance between two joints
+def dist3D(p1, p2):
+    return np.sqrt((p1[0]-p2[0])*(p1[0]-p2[0]) + (p1[1]-p2[1])*(p1[1]-p2[1]) + (p1[2]-p2[2])*(p1[2]-p2[2]))
+
 def main():
 
     #Process parameters
@@ -164,10 +232,22 @@ def main():
         recording=False
         print("Recording OFF")
         
+    noClientTesting=False
+    if len(sys.argv)>3:
+        if sys.argv[3] == "1":
+            noClientTesting=True
+            print("TESTING NO FLNL ON")
+        else:
+            noClientTesting=False
+            print("Testing no FLNL OFF")
+    else:
+        recording=False
+        print("Recording OFF")
+        
     #Arm side to track
     armSide='l';
     # Left eye, Right eye, Left Hip, Right Hip, Left Shoulder, Right Shoulder, Left Elbow, Left Wrist
-    objects_to_track = [2, 5, 23, 24, 11, 12, 13, 15]
+    objects_to_track = [J.L_Y, J.R_Y, J.L_H, J.R_H, J.L_S, J.R_S, J.L_E, J.L_W]
 
     ## Check camera acq
     #Try to open and create rs camera
@@ -183,10 +263,13 @@ def main():
     #tag = AprilTag()
     
     ## Start FLNL and wait for connection
-    streaming=True
     server = FLNLServer()
-    server.WaitForClient() #on default address 127.0.0.1 and port 2042
-    print("FLNL connected")
+    if(noClientTesting):
+        streaming=True
+    else:
+        streaming=False
+        server.WaitForClient() #on default address 127.0.0.1 and port 2042
+        print("FLNL connected")
     
     ## Init pose detector
     detector = PoseDetector()
@@ -194,7 +277,7 @@ def main():
     cTime = 0
     pTime = 0
     fps = 0
-    while(server.IsConnected() or True):
+    while(server.IsConnected() or noClientTesting):
         
         ## When connected, continue detection
         #Use realsense camera:
@@ -212,8 +295,10 @@ def main():
         jointsPosImg = detector.findPose(frame, armSide, objects_to_track, drawing)
         
         ## Convert to 3D
-        if(rs.init):
+        if(rs.init and len(jointsPosImg)>0):
             jointsPos = rs.imgTo3D(jointsPosImg, depth_image)
+            # Transform to shoulder frame
+            transform3DPoints(jointsPos)
         
         ## Get April tags
         #if(rs.init):
@@ -237,44 +322,57 @@ def main():
                     val.append(jointsPos[id][0])
                     val.append(jointsPos[id][1])
                     val.append(jointsPos[id][2])
-                server.SendValues(val)
-                print(fps)
+                if(noClientTesting):
+                    #Distances
+                    #print(str(dist3D(jointsPos[J.R_S],jointsPos[J.L_S])/1000)+', '+str(dist3D(jointsPos[J.L_S],jointsPos[J.L_E])/1000)+', '+str(dist3D(jointsPos[J.L_E],jointsPos[J.L_W])/1000))
+                    #Points
+                    #for id in objects_to_track:
+                    #    print(jointsPos[id][0], jointsPos[id][1], jointsPos[id][2], sep=',', end=',')
+                    #print('')
+                    #Wrist position only
+                    print(jointsPos[J.L_W][0], jointsPos[J.L_W][1], jointsPos[J.L_W][2], sep='\t')
+                else:
+                    server.SendValues(val)
+                    print(fps)
+                
         
-        ## Start streming?
-        if(server.IsCmd("STA")):
-            streaming=True
-            print("Start streaming values")
-            if(recording):
-                rs.recorder.resume()
-                print("Start recording stream")
+        ##Process incoming commands if we are connected
+        if(not noClientTesting):
+            ## Start streaming?
+            if(server.IsCmd("STA")):
+                streaming=True
+                print("Start streaming values")
+                if(rs.init and recording):
+                    rs.recorder.resume()
+                    print("Start recording stream")
 
-        ## Stop?    
-        if(server.IsCmd("STO")):
-            streaming=False
-            print("Stop streaming values")
-            if(recording):
-                rs.recorder.pause()
-                print("Stop recording stream")
+            ## Stop streaming?  
+            if(server.IsCmd("STO")):
+                streaming=False
+                print("Stop streaming values")
+                if(rs.init and recording):
+                    rs.recorder.pause()
+                    print("Stop recording stream")
+                
+            ## Set to left arm
+            if(server.IsCmd("ARL")):
+                armSide='l'
+                # Left eye, Right eye, Left Hip, Right Hip, Left Shoulder, Right Shoulder, Left Elbow, Left Wrist
+                objects_to_track = [J.L_Y, J.R_Y, J.L_H, J.R_H, J.L_S, J.R_S, J.L_E, J.L_W]
+                print("Tracking LEFT arm")
+                
+            ## Set to right arm
+            if(server.IsCmd("ARR")):
+                armSide='r'
+                # Left eye, Right eye, Left Hip, Right Hip, Left Shoulder, Right Shoulder, Right Elbow, Right Wrist
+                objects_to_track = [J.L_Y, J.R_Y, J.L_H, J.R_H, J.L_S, J.R_S, J.R_E, J.R_W]
+                print("Tracking Right arm")
+                
+            ## Disconnect command
+            if(server.IsCmd("DIS")):
+                break
             
-        ## Set to left arm
-        if(server.IsCmd("ARL")):
-            armSide='l'
-            # Left eye, Right eye, Left Hip, Right Hip, Left Shoulder, Right Shoulder, Left Elbow, Left Wrist
-            objects_to_track = [2, 5, 23, 24, 11, 12, 13, 15]
-            print("Tracking LEFT arm")
-            
-        ## Set to right arm
-        if(server.IsCmd("ARR")):
-            armSide='r'
-            # Left eye, Right eye, Left Hip, Right Hip, Left Shoulder, Right Shoulder, Right Elbow, Right Wrist
-            objects_to_track = [2, 5, 23, 24, 11, 12, 14, 16]
-            print("Tracking Right arm")
-            
-        ## Disconnect command
-        if(server.IsCmd("DIS")):
-            break
-            
-        ## Can also close with 'q' if display
+        ## Can also close with 'q'
         if drawing:
             k = cv2.waitKey(1)
             if k == ord('q') or keyboard.is_pressed('q'):
@@ -289,8 +387,9 @@ def main():
     print("Disconnected. Exiting...")
     
     ## Exit
-    if(server.IsConnected()):
-        server.Close()
+    if(not noClientTesting):
+        if(server.IsConnected()):
+            server.Close()
     if(rs.init):
         rs.release()
     else:
