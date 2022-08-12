@@ -98,6 +98,7 @@ class M3CalibState : public EMUFourierState {
     bool isCalibDone() {return calibDone;}
 
    private:
+     VM3 qi;
      VM3 stop_reached_time;
      bool at_stop[3];
      bool calibDone=false;
