@@ -1,10 +1,9 @@
 /**
  * \file M3DemoState.h
  * \author Vincent Crocher
- * \version 0.3
- * \date 2020-07-27
+ * \date 2022-08-17
  *
- * \copyright Copyright (c) 2020
+ * \copyright Copyright (c) 2022
  *
  */
 
@@ -120,7 +119,7 @@ class M3LockState : public EMUFourierState {
 
    private:
     VM3 X0;
-    double k = 1100.;                 //! Impedance proportional gain (spring)
+    double k = 1100.;                //! Impedance proportional gain (spring)
     double d = 3.;                   //! Impedance derivative gain (damper)
 };
 
@@ -233,7 +232,7 @@ class M3MinJerkPosition: public M3PtToPt {
 
    private:
     //float k_i=1.; //! Integral gain
-    double k = 1100.;                 //! Impedance proportional gain (spring)
+    double k = 1100.;                //! Impedance proportional gain (spring)
     double d = 3.;                   //! Impedance derivative gain (damper)
 };
 
