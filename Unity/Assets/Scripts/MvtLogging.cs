@@ -45,6 +45,7 @@ namespace MvtLogging
 		~MvtLogger()
 		{
 			Stop();
+			trakstar.Close();
 			mediaPipe.SendCmd("DIS".ToCharArray());
 		}
 		
@@ -146,6 +147,14 @@ namespace MvtLogging
 			//Close file
 			if (logFileStream!=null)
 				logFileStream.Dispose();
+		}
+		
+		public void SetArmSide(string s)
+		{
+			if(s[0]=='l' || s[0]=='L')
+				mediaPipe.SendCmd("ARL".ToCharArray());
+			if(s[0]=='r' || s[0]=='R')
+				mediaPipe.SendCmd("ARR".ToCharArray());
 		}
 		
 		private void RecordSamples()

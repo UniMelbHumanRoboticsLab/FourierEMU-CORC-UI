@@ -65,9 +65,10 @@ namespace SessionsData
         /// <summary>
         /// Create and initialise the session for patient id p
         /// </summary>
-        public SessionData(int p)
+        public SessionData(int p, string armside)
         {
             patient_id = p;
+            arm_side = armside;
             activities = new List<ActivityData>();
             start_time = DateTime.Now;
             distance = 0;
@@ -107,6 +108,7 @@ namespace SessionsData
         }
         
         int patient_id;
+        string arm_side;
         DateTime start_time;
         public List<ActivityData> activities;
         public double distance; //total of session

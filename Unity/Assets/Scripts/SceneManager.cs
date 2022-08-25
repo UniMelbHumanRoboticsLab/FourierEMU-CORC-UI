@@ -581,7 +581,7 @@ public class SceneManager : MonoBehaviour
     //Patient selected and start session pressed
     void StartSession(Button bt)
     {
-        //Cleasr session panel
+        //Clear session panel
         GameObject p=GameObject.Find("ActivitiesList");
         foreach(Transform child in p.transform)
         {
@@ -594,7 +594,13 @@ public class SceneManager : MonoBehaviour
             SD.WriteToXML();
             Logger.Stop();
         }
-        SD = new SessionData(val);
+        //Get selectec arm side
+        string side;
+        if(GameObject.Find("ArmSide/Left").GetComponent<Toggle>().isOn)
+            side = "L";
+        else
+            side = "R";
+        SD = new SessionData(val, side);
         currentActivity = new ActivityData("None", -1, -1);
         GameObject.Find("CurrentActivityTxt").GetComponentInChildren<TMPro.TextMeshProUGUI>().text = "";
         enablePanel("ControlPanel", true);
@@ -605,6 +611,7 @@ public class SceneManager : MonoBehaviour
         string filename = folder+"/Patient"+val.ToString("00")+"_"+DateTime.Now.ToString("dd-MM-yy_HH-mm-ss");
         if(Logger.Init(filename+".csv"))
         {
+            Logger.SetArmSide(side);
             Logger.Start();
             StatusSensors.color = Color.white;
             StatusSensors.text = "Sensors: Connected. Logging.";
@@ -630,6 +637,7 @@ public class SceneManager : MonoBehaviour
             SD.WriteToXML();
             Logger.Stop();
         }
+        
         if (Robot.IsInitialised())
         {
             GoGrav(.0);
