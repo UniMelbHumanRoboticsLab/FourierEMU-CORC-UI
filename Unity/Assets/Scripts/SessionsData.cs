@@ -21,6 +21,7 @@ namespace SessionsData
         /// </summary>
         public ActivityData(string t, double a, double g)
         {
+            arm_side = "";
             type = t;
             distance = 0;
             nb_mvts = 0;
@@ -48,6 +49,7 @@ namespace SessionsData
             return interval.TotalSeconds;
         }
 
+        public string arm_side;
         public string type; //Command use
         public float time_s;
         DateTime start_time;
@@ -81,6 +83,7 @@ namespace SessionsData
         public void AddActivity(ActivityData a)
         {
             a.CalculateFinalTime();
+            a.arm_side=arm_side;
             activities.Add(a);
         }
         

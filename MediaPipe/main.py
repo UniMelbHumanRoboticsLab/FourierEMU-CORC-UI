@@ -298,7 +298,7 @@ def main():
         if(rs.init and len(jointsPosImg)>0):
             jointsPos = rs.imgTo3D(jointsPosImg, depth_image)
             # Transform to shoulder frame
-            transform3DPoints(jointsPos)
+            #transform3DPoints(jointsPos)
         
         ## Get April tags
         #if(rs.init):
@@ -366,7 +366,7 @@ def main():
                 armSide='r'
                 # Left eye, Right eye, Left Hip, Right Hip, Left Shoulder, Right Shoulder, Right Elbow, Right Wrist
                 objects_to_track = [J.L_Y, J.R_Y, J.L_H, J.R_H, J.L_S, J.R_S, J.R_E, J.R_W]
-                print("Tracking Right arm")
+                print("Tracking RIGHT arm")
                 
             ## Disconnect command
             if(server.IsCmd("DIS")):

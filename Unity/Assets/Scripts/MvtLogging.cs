@@ -151,10 +151,14 @@ namespace MvtLogging
 		
 		public void SetArmSide(string s)
 		{
-			if(s[0]=='l' || s[0]=='L')
+			if(s[0]=='l' || s[0]=='L') {
 				mediaPipe.SendCmd("ARL".ToCharArray());
-			if(s[0]=='r' || s[0]=='R')
+				Log("Set left arm");
+			}
+			if(s[0]=='r' || s[0]=='R') {
 				mediaPipe.SendCmd("ARR".ToCharArray());
+				Log("Set right arm");
+			}
 		}
 		
 		private void RecordSamples()
