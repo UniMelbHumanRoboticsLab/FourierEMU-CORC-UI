@@ -578,6 +578,13 @@ public class SceneManager : MonoBehaviour
         }
     }
     
+    //Sensor start commmand coroutine: delay required
+    private IEnumerator StartLoggerCmd()
+    {
+        yield return new WaitForSeconds(0.5f);
+        Logger.Start();
+    }
+    
     //Patient selected and start session pressed
     void StartSession(Button bt)
     {
@@ -612,7 +619,7 @@ public class SceneManager : MonoBehaviour
         if(Logger.Init(filename+".csv"))
         {
             Logger.SetArmSide(side);
-            Logger.Start();
+            StartCoroutine(StartLoggerCmd());
             StatusSensors.color = Color.white;
             StatusSensors.text = "Sensors: Connected. Logging.";
         }
@@ -629,6 +636,14 @@ public class SceneManager : MonoBehaviour
         Application.Quit();
     }
     
+    private IEnumerator QuitRobot()
+    {
+        GoGrav(.0);
+        yield return new WaitForSeconds(3.0f);
+        Robot.SendCmd("QUIT");
+        //Robot.Disconnect();
+    }
+    
     void OnApplicationQuit() 
     {
         //Write session to file if exists
@@ -640,9 +655,7 @@ public class SceneManager : MonoBehaviour
         
         if (Robot.IsInitialised())
         {
-            GoGrav(.0);
-            Robot.SendCmd("QUIT");
-            Robot.Disconnect();
+            StartCoroutine(QuitRobot());
         }
     }
 }
