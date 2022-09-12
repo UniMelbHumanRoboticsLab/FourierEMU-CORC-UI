@@ -440,6 +440,7 @@ public class SceneManager : MonoBehaviour
                 //Lock/stop
                 case "OKLO":
                     AddActivity("Lock", -1, -1);
+                    GameObject.Find("GOLOTg").GetComponent<Toggle>().isOn = true;
                     break;
                 //UnLock
                 case "OKUN":
@@ -448,14 +449,17 @@ public class SceneManager : MonoBehaviour
                 //Gravity
                 case "OKGR":
                     AddActivity("Deweighting", -1, MassSl.value);
+                    GameObject.Find("GOGRTg").GetComponent<Toggle>().isOn = true;
                     break;
                 //Mobilisation
                 case "OKJE":
                     AddActivity("Mobilisation", -1, -1);
+                    GameObject.Find("GOJETg").GetComponent<Toggle>().isOn = true;
                     break;
                 //Path
                 case "OKPA":
                     AddActivity("Guidance", AssistanceSl.value, -1);
+                    GameObject.Find("GOPATg").GetComponent<Toggle>().isOn = true;
                     break;
                 
                 //Change mass
