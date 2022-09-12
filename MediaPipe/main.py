@@ -241,8 +241,8 @@ def main():
             noClientTesting=False
             print("Testing no FLNL OFF")
     else:
-        recording=False
-        print("Recording OFF")
+        noClientTesting=False
+        print("Testing no FLNL OFF")
         
     #Arm side to track
     armSide='l';
@@ -266,6 +266,8 @@ def main():
     server = FLNLServer()
     if(noClientTesting):
         streaming=True
+        if(rs.init and recording):
+            rs.recorder.resume()
     else:
         streaming=False
         server.WaitForClient() #on default address 127.0.0.1 and port 2042

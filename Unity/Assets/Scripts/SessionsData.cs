@@ -67,9 +67,9 @@ namespace SessionsData
         /// <summary>
         /// Create and initialise the session for patient id p
         /// </summary>
-        public SessionData(int p, string armside)
+        public SessionData(string s, string armside)
         {
-            patient_id = p;
+            subject_name = s;
             arm_side = armside;
             activities = new List<ActivityData>();
             start_time = DateTime.Now;
@@ -101,16 +101,17 @@ namespace SessionsData
         /// </summary>
         public void WriteToXML()
         {
-            string folder = "Patient"+patient_id.ToString("00");
+            string folder = subject_name;//"Patient"+patient_id.ToString("00");
             Directory.CreateDirectory(folder);
-            string filename = folder+"/Patient"+patient_id.ToString("00")+"_"+start_time.ToString("dd-MM-yy_HH-mm-ss");
+            string filename = folder+/*"/Patient"+patient_id.ToString("00")*/ "/"+subject_name+"_"+start_time.ToString("dd-MM-yy_HH-mm-ss");
             XmlSerializer writer = new XmlSerializer(activities.GetType());
             StreamWriter file = new StreamWriter(filename+".xml");
             writer.Serialize(file, activities);
             file.Close();
         }
         
-        int patient_id;
+        //int patient_id;
+        string subject_name;
         string arm_side;
         DateTime start_time;
         public List<ActivityData> activities;

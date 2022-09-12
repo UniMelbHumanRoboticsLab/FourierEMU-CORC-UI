@@ -30,6 +30,7 @@ public class SceneManager : MonoBehaviour
     SessionData SD;
     ActivityData currentActivity;
     bool first_added_activity = true;
+    private UIFlags flags;
 
     // Start is called before the first frame update
     void Start()
@@ -58,6 +59,9 @@ public class SceneManager : MonoBehaviour
         //Session state panel
         Button StartSessionBt = GameObject.Find("StartSessionBt").GetComponent<Button>();
         StartSessionBt.onClick.AddListener(() => { StartSession(StartSessionBt); });
+        
+        Button SetGoalBt = GameObject.Find("SetGoalBt").GetComponent<Button>();
+        SetGoalBt.onClick.AddListener(() => { flags.SetGoal=true; });
         
         Button QuitBt = GameObject.Find("QuitBt").GetComponent<Button>();
         QuitBt.onClick.AddListener(() => { Quit(); });
@@ -143,6 +147,13 @@ public class SceneManager : MonoBehaviour
             Status.text += Robot.State["Contribution"][0].ToString("0.0");
             Status.text += "\n";
             
+            //Update UI flags
+            if(GameObject.Find("NoRobot").GetComponent<Toggle>().isOn)
+                flags.NoRobot = true;
+            else
+                flags.NoRobot = false;
+            flags.SetGoal = false; //reset to false if it has been set
+            
             //Update session data: mvt counts, distance...
             updateState();
             
@@ -188,6 +199,7 @@ public class SceneManager : MonoBehaviour
             if( (last_p<=0.9 && p>0.9) && mvt_progress_50percent) {
                 is_new_mvt = 1;
                 mvt_progress_50percent = false;
+                GameObject.Find("MvtSuccessSnd").GetComponent<AudioSource>().Play();
             }
             currentActivity.nb_mvts += is_new_mvt;
             SD.nb_mvts += is_new_mvt;
@@ -540,7 +552,7 @@ public class SceneManager : MonoBehaviour
         {
             Robot.Init(ip.text);
             if(Robot.IsInitialised()) {
-                Logger = new MvtLogger(Robot, GameObject.Find("AdminPanel/LogSensors").GetComponent<Text>());
+                Logger = new MvtLogger(Robot, flags, GameObject.Find("AdminPanel/LogSensors").GetComponent<Text>());
                 if(Logger.InitSensors())
                 {
                     StatusSensors.color = Color.white;
@@ -594,14 +606,15 @@ public class SceneManager : MonoBehaviour
         {
             Destroy(child.gameObject);
         }
-        int val = GameObject.Find("SessionPanel/PatientsList").GetComponent<TMPro.TMP_Dropdown>().value;
+        TMPro.TMP_Dropdown Dropdown = GameObject.Find("SessionPanel/PatientsList").GetComponent<TMPro.TMP_Dropdown>();
+        string val = Dropdown.options[Dropdown.value].text;
         //If session already existed: save it first
         if(SD.activities!=null)
         {
             SD.WriteToXML();
             Logger.Stop();
         }
-        //Get selectec arm side
+        //Get selected arm side
         string side;
         if(GameObject.Find("ArmSide/Left").GetComponent<Toggle>().isOn)
             side = "L";
@@ -613,9 +626,9 @@ public class SceneManager : MonoBehaviour
         enablePanel("ControlPanel", true);
         
         //MvtLogging file TODO: embed SessionData ??
-        string folder = "Patient"+val.ToString("00");
+        string folder = val;//"Patient"+val.ToString("00");
         Directory.CreateDirectory(folder);
-        string filename = folder+"/Patient"+val.ToString("00")+"_"+DateTime.Now.ToString("dd-MM-yy_HH-mm-ss");
+        string filename = folder+ /*"/Patient"+val.ToString("00")*/ "/"+val+"_"+DateTime.Now.ToString("dd-MM-yy_HH-mm-ss");
         if(Logger.Init(filename+".csv"))
         {
             Logger.SetArmSide(side);
