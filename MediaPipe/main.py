@@ -265,9 +265,10 @@ def main():
     ## Start FLNL and wait for connection
     server = FLNLServer()
     if(noClientTesting):
-        streaming=True
-        if(rs.init and recording):
-            rs.recorder.resume()
+        streaming=False
+        #streaming=True
+        #if(rs.init and recording):
+        #    rs.recorder.resume()
     else:
         streaming=False
         server.WaitForClient() #on default address 127.0.0.1 and port 2042
@@ -287,7 +288,7 @@ def main():
             # Capture Camera Frame
             ret, color_image, depth_image = rs.get_frame_stream()
             # copy
-            frame = color_image
+            frame = color_image.copy()
         else:
             # Webcam otherwise
             sucess, frame = cap.read()
@@ -332,7 +333,7 @@ def main():
                     #    print(jointsPos[id][0], jointsPos[id][1], jointsPos[id][2], sep=',', end=',')
                     #print('')
                     #Wrist position only
-                    print(jointsPos[J.L_W][0], jointsPos[J.L_W][1], jointsPos[J.L_W][2], sep='\t')
+                    print(fps, 'fps: ', jointsPos[J.L_W][0], jointsPos[J.L_W][1], jointsPos[J.L_W][2], sep='\t')
                 else:
                     server.SendValues(val)
                     print(fps)
@@ -373,6 +374,24 @@ def main():
             ## Disconnect command
             if(server.IsCmd("DIS")):
                 break
+        
+        else:## For testing when not connected
+            k = cv2.waitKey(1)
+            ## Start streaming?
+            if(k==ord('r')):
+                streaming=True
+                print("Start streaming values")
+                if(rs.init and recording):
+                    rs.recorder.resume()
+                    print("Start recording stream")
+            
+            ## Stop streaming?
+            if(k==ord('s')):
+                streaming=False
+                print("Stop streaming values")
+                if(rs.init and recording):
+                    rs.recorder.pause()
+                    print("Stop recording stream")
             
         ## Can also close with 'q'
         if drawing:
