@@ -47,9 +47,13 @@ void M3CalibState::duringCode(void) {
     double b = 7.;
     for(unsigned int i=0; i<3; i++) {
         tau(i) = std::min(std::max(8 - b * vel(i), .0), 8.);
-        if(stop_reached_time(i)>0.5 && robot->getPosition()!=qi) {
+        #ifndef NOROBOT
+            if(stop_reached_time(i)>0.5 && robot->getPosition()!=qi ) {
+                at_stop[i]=true;
+            }
+        #else
             at_stop[i]=true;
-        }
+        #endif
         if(vel(i)<0.01) {
             stop_reached_time(i) += dt();
         }

@@ -259,9 +259,11 @@ EMUFourierMachine::EMUFourierMachine() {
 
     addTransition("StandbyState", &goToJerk, "MinJerkState");
     addTransition("MinJerkState", &goToJerk, "MinJerkState");
+    addTransition("PathState", &goToJerk, "MinJerkState");
 
     addTransition("StandbyState", &goToPath, "PathState");
     addTransition("PathState", &goToPath, "PathState");
+    addTransition("MinJerkState", &goToPath, "PathState");
     addTransition("PathState", &updatePath, "PathState"); //Fake transition never returning true
 
     addTransition("StandbyState", &goToGravity, "StandbyState");
