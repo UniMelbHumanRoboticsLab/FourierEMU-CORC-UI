@@ -12,6 +12,7 @@ bool goToCalib(StateMachine & SM) {
     //Check incoming command requesting state change
     if ( sm.UIserver->isCmd("GOCA") ) {
         sm.UIserver->sendCmd(string("OKCA"));
+        spdlog::debug("goToCalib");
         return true;
     }
 
@@ -33,6 +34,7 @@ bool goToLock(StateMachine & SM) {
     //Check incoming command requesting state change
     if ( sm.UIserver->isCmd("GOLO") ) {
         sm.UIserver->sendCmd(string("OKLO"));
+        spdlog::debug("goToLock");
         return true;
     }
 
@@ -50,6 +52,7 @@ bool goToUnlock(StateMachine & SM) {
     //Check incoming command requesting state change
     if ( sm.UIserver->isCmd("GOUN") ) {
         sm.UIserver->sendCmd(string("OKUN"));
+        spdlog::debug("goToUnlock");
         return true;
     }
 
@@ -146,7 +149,6 @@ bool goToPath(StateMachine & SM) {
 bool goToGravity(StateMachine & SM) {
     EMUFourierMachine & sm = static_cast<EMUFourierMachine &>(SM); //Cast to specific StateMachine type
 
-    //TODO: UPDATE with mass parameter (and update command?) and viscosity setting
     //TODO: differentiate (for logging) from standby state
     std::vector<double> params;
     if ( sm.UIserver->isCmd("GOGR", params) ) {
@@ -154,6 +156,7 @@ bool goToGravity(StateMachine & SM) {
             std::shared_ptr<M3MassCompensation> s = sm.state<M3MassCompensation>("StandbyState");
             s->setMass(params[0]);
             sm.UIserver->sendCmd(string("OKGR"));
+            spdlog::debug("goToGravity");
             return true;
         }
         else {
@@ -183,6 +186,7 @@ bool quit(StateMachine & SM) {
     //Check incoming command requesting state change
     if ( sm.UIserver->isCmd("QUIT") ) {
         sm.UIserver->sendCmd(string("OKQU"));
+        spdlog::debug("goToQuit");
         std::raise(SIGTERM); //Clean exit
         return true;
     }
@@ -205,6 +209,7 @@ bool updatePath(StateMachine & SM) {
                 s->setAssistanceLevel(params[0]);
             }
             sm.UIserver->sendCmd(string("OKUP"));
+            spdlog::debug("updatePath: {}", params[0]);
         }
         else {
             spdlog::warn("updatePath: Error: number of command parameters.");
@@ -230,6 +235,7 @@ bool updateMass(StateMachine & SM) {
                 s->setMass(params[0]);
             }
             sm.UIserver->sendCmd(string("OKUM"));
+            spdlog::debug("updateMass: {}", params[0]);
         }
         else {
             spdlog::warn("updateMass: Error: number of command parameters.");
@@ -243,7 +249,8 @@ bool updateMass(StateMachine & SM) {
 
 EMUFourierMachine::EMUFourierMachine() {
     //Create a Robot and set it to generic state machine
-    setRobot(std::make_unique<RobotM3>("EMU_FOURIER", "M3_params.yaml"));
+    setRobot(std::make_unique<RobotM3>("EMU_FOURIER", "M3_params.yaml")); //TODO Vincent test
+    //setRobot(std::make_unique<RobotM3>("EMU_MELB", "M3_params.yaml"));
 
     //Create state instances and add to the State Machine
     addState("DoNothingState", std::make_shared<M3NothingState>(robot(), this));

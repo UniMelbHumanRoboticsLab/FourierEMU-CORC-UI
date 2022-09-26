@@ -25,7 +25,7 @@ typedef struct M3TrajPt
 
 
 /**
- * \brief Generic state type for used with M3DemoMachine, providing running time and iterations number: been superseeded by default state.
+ * \brief Generic state type for used with M3DemoMachine, providing running time and iterations number: been superseeded by default state, not very much useful anymore.
  *
  */
 class EMUFourierState : public State {
@@ -35,11 +35,11 @@ class EMUFourierState : public State {
     EMUFourierState(RobotM3* M3, EMUFourierMachine *sm_, const char *name = NULL): State(name), robot(M3), sm(sm_){spdlog::debug("Created EMUFourierState {}", name);};
    private:
     void entry(void) final {
-        std::cout
+        /*std::cout
         << "==================================" << std::endl
         << " STARTING  " << getName() << std::endl
         << "----------------------------------" << std::endl
-        << std::endl;
+        << std::endl;*/
 
         //Actual state entry
         entryCode();
@@ -50,11 +50,11 @@ class EMUFourierState : public State {
     };
     void exit(void) final {
         exitCode();
-        std::cout
+        /*std::cout
         << "----------------------------------" << std::endl
         << "EXIT "<< getName() << std::endl
         << "==================================" << std::endl
-        << std::endl;
+        << std::endl;*/
     };
 
    public:
@@ -68,7 +68,7 @@ class EMUFourierState : public State {
 
 
 /**
- * \brief Does nothing waiting for a calib command
+ * \brief Does nothing waiting for a calib command. Set drives in torque control mode.
  *
  */
 class M3NothingState : public EMUFourierState {
@@ -82,7 +82,7 @@ class M3NothingState : public EMUFourierState {
 };
 
 /**
- * \brief Position calibration of M3. Go to the bottom left stops of robot at constant torque for absolute position calibration.
+ * \brief Position calibration of M3. Go to the bottom left stops of robot at constant torque for absolute position calibration. Set drives in torque control mode.
  *
  */
 class M3CalibState : public EMUFourierState {
@@ -105,7 +105,7 @@ class M3CalibState : public EMUFourierState {
 
 
 /**
- * \brief Lock in place: position control around .
+ * \brief Lock in place: position control around current point. Assumes drives in torque control already.
  *
  */
 class M3LockState : public EMUFourierState {
@@ -125,7 +125,7 @@ class M3LockState : public EMUFourierState {
 
 
 /**
- * \brief Provide end-effector mass compensation on M3. Mass is controllable through keyboard inputs.
+ * \brief Provide end-effector mass compensation on M3. Mass is controllable through keyboard inputs. Assumes drives in torque control already.
  *
  */
 class M3MassCompensation : public EMUFourierState {
@@ -148,7 +148,7 @@ class M3MassCompensation : public EMUFourierState {
 
 
 /**
- * \brief Generic pt to pt state: to be derived
+ * \brief Generic pt to pt state: to be derived.
  *
  */
 class M3PtToPt: public EMUFourierState {
@@ -194,7 +194,7 @@ class M3PtToPt: public EMUFourierState {
 
 
 /**
- * \brief Path contraint with viscous assistance.
+ * \brief Path contraint with viscous assistance. Assumes drives in torque control already.
  *
  */
 class M3PathState : public M3PtToPt {
@@ -218,7 +218,7 @@ class M3PathState : public M3PtToPt {
 
 
 /**
- * \brief Point to point position control with min jerk trajectory interpolation
+ * \brief Point to point position control with min jerk trajectory interpolation. Assumes drives in torque control already.
  *
  */
 class M3MinJerkPosition: public M3PtToPt {

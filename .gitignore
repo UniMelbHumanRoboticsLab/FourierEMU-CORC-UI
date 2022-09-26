@@ -81,3 +81,8 @@ crashlytics-build.properties
 
 ##Also ignore main CORC stack
 #/CANOpenRobotController/
+
+#ignore logs
+/TestLogs/
+/MediaPipe/dist/
+/MediaPipe/bin/

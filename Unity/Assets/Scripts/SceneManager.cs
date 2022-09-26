@@ -227,6 +227,10 @@ public class SceneManager : MonoBehaviour
                 {
                     act_txt += " (" + currentActivity.gravity.ToString("0.0") + "kg):";
                 }
+                else if(currentActivity.type=="Assistive")
+                {
+                    act_txt += " (+" + currentActivity.assistance.ToString("0.0") + "):\t";
+                }
                 else
                 {
                     act_txt += ":\t\t";
@@ -458,7 +462,7 @@ public class SceneManager : MonoBehaviour
                     break;
                 //Path
                 case "OKPA":
-                    AddActivity("Guidance", AssistanceSl.value, -1);
+                    AddActivity("Assistive", AssistanceSl.value, -1);
                     GameObject.Find("GOPATg").GetComponent<Toggle>().isOn = true;
                     break;
                 
