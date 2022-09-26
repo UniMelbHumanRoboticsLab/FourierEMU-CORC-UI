@@ -249,7 +249,7 @@ bool updateMass(StateMachine & SM) {
 
 EMUFourierMachine::EMUFourierMachine() {
     //Create a Robot and set it to generic state machine
-    setRobot(std::make_unique<RobotM3>("EMU_FOURIER", "M3_params.yaml")); //TODO Vincent test
+    setRobot(std::make_unique<RobotM3>("EMU_FOURIER", "M3_params.yaml"));
     //setRobot(std::make_unique<RobotM3>("EMU_MELB", "M3_params.yaml"));
 
     //Create state instances and add to the State Machine
