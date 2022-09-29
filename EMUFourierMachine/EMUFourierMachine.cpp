@@ -60,6 +60,24 @@ bool goToUnlock(StateMachine & SM) {
     return false;
 }
 
+bool goToReset(StateMachine & SM) {
+    EMUFourierMachine & sm = static_cast<EMUFourierMachine &>(SM); //Cast to specific StateMachine type
+
+    //keyboard press
+    if ( sm.robot()->keyboard->getKeyUC()=='R' )
+        return true;
+
+    //Check incoming command requesting state change
+    if ( sm.UIserver->isCmd("GORE") ) {
+        sm.UIserver->sendCmd(string("OKRE"));
+        spdlog::debug("goToReset");
+        return true;
+    }
+
+    //Otherwise false
+    return false;
+}
+
 bool goToJerk(StateMachine & SM) {
     EMUFourierMachine & sm = static_cast<EMUFourierMachine &>(SM); //Cast to specific StateMachine type
 
@@ -254,6 +272,7 @@ EMUFourierMachine::EMUFourierMachine() {
 
     //Create state instances and add to the State Machine
     addState("DoNothingState", std::make_shared<M3NothingState>(robot(), this));
+    addState("ResetState", std::make_shared<M3NothingState>(robot(), this));
     addState("CalibState", std::make_shared<M3CalibState>(robot(), this));
     addState("StandbyState", std::make_shared<M3MassCompensation>(robot(), this));
     addState("MinJerkState", std::make_shared<M3MinJerkPosition>(robot(), this));
@@ -274,6 +293,7 @@ EMUFourierMachine::EMUFourierMachine() {
     addTransition("PathState", &updatePath, "PathState"); //Fake transition never returning true
 
     addTransition("StandbyState", &goToGravity, "StandbyState");
+    addTransition("ResetState", &goToGravity, "StandbyState");
     addTransition("MinJerkState", &goToGravity, "StandbyState");
     addTransition("PathState", &goToGravity, "StandbyState");
     addTransition("StandbyState", &updateMass, "StandbyState"); //Fake transition never returning true
@@ -282,6 +302,11 @@ EMUFourierMachine::EMUFourierMachine() {
     addTransition("MinJerkState", &goToLock, "LockState");
     addTransition("StandbyState", &goToLock, "LockState");
     addTransition("LockState", &goToUnlock, "StandbyState");
+
+    addTransition("StandbyState", &goToReset, "ResetState");
+    addTransition("MinJerkState", &goToReset, "ResetState");
+    addTransition("PathState", &goToReset, "ResetState");
+    addTransition("LockState", &goToReset, "ResetState");
 
     addTransitionFromAny(&quit, "StandbyState");
     addTransition("StandbyState", &quit, "StandbyState"); //From any does not apply to self (destination state)

@@ -10,9 +10,10 @@ UI (Unity) and [CORC](https://github.com/UniMelbHumanRoboticsLab/CANOpenRobotCon
 Communication commands from the UI side to the CORC state machine:
 |   Command|  Parameters                          | Response(s)|   Action                                                           |
 |----------|--------------------------------------|------------|--------------------------------------------------------------------|
-|      GOCA|    /                                 |   OKCA     |  Go from Nothing state to Calibration state                        |
-|      GOLO|       /                              |   OKLO     |  Go to Lock state (from any other but Nothing state)               |
+|      GOCA|    /                                 |   OKCA     |  Go from Nothing state to Calibration state.                       |
+|      GOLO|       /                              |   OKLO     |  Go to Lock state (from any other but Nothing or Reset states).    |
 |      GOUN|    /                                 |  OKUN      |  Unlock (go to Deweighting from Lock state)                        |
+|      GORE| /                                    | OKRE       |  Go to Reset state: reset torque control and apply 0 torque.       |
 |      GOJE| [nbpts,x0,y0,z0,T0, ..., xn,yn,zn,Tn]| OKJE/ERJE* |  Go to Min Jerk (passive mob.) with n points                       |
 |      GOPA| [nbpts,x0,y0,z0,T0, ..., xn,yn,zn,Tn]| OKPA/ERPA* |  Go to Path state (guidance) with n points (T param not used)      |
 |      GOGR|    [mass]                            | OKGR/ERGR* |  Go to Deweighting state with specified mass compensation          |

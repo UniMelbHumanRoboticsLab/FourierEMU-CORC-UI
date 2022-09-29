@@ -50,6 +50,9 @@ public class SceneManager : MonoBehaviour
         Button CmdBt = GameObject.Find("AdminPanel/CmdBt").GetComponent<Button>();
         CmdBt.onClick.AddListener(() => { SendCommand(CmdBt, InputCmd); });
         
+        Button ResetBt = GameObject.Find("AdminPanel/ResetBt").GetComponent<Button>();
+        ResetBt.onClick.AddListener(() => { SendResetCommand(ResetBt); });
+        
         Status = GameObject.Find("AdminPanel/Status").GetComponent<Text>();
         StatusSensors = GameObject.Find("AdminPanel/StatusSensors").GetComponent<Text>();
         
@@ -465,6 +468,11 @@ public class SceneManager : MonoBehaviour
                     AddActivity("Assistive", AssistanceSl.value, -1);
                     GameObject.Find("GOPATg").GetComponent<Toggle>().isOn = true;
                     break;
+                //Reset
+                case "OKRE":
+                    AddActivity("Reset", -1, -1);
+                    GameObject.Find("GOLOTg").GetComponent<Toggle>().isOn = true;
+                    break;
                 
                 //Change mass
                 case "OKUM":
@@ -488,6 +496,12 @@ public class SceneManager : MonoBehaviour
     void SendCommand(Button CmdBt, InputField InputCmd)
     {
         Robot.SendCmd(InputCmd.text);
+        StartCoroutine(UpdateRetCmd());
+    }
+    
+    void SendResetCommand(Button Bt)
+    {
+        Robot.SendCmd("GORE");
         StartCoroutine(UpdateRetCmd());
     }
     
