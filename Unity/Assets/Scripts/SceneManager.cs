@@ -139,6 +139,8 @@ public class SceneManager : MonoBehaviour
             Status.text += "\tF:";
             foreach (double val in Robot.State["F"])
                 Status.text += val.ToString("00.0") + " \t";
+                
+            //TODO ISSUE AROUND HERE
             Status.text += "\n";
             Status.text += "Command: ";
             Status.text += Robot.State["Command"][0].ToString("0");
@@ -175,6 +177,8 @@ public class SceneManager : MonoBehaviour
             Arrow.transform.localPosition = new Vector3(0, 0, force.magnitude / force_scale);
             Arrow.transform.localScale = new Vector3(0.2f, force.magnitude / force_scale, 0.2f);
             Cursor.transform.LookAt(Cursor.transform.position - force);
+            
+            //TODO AND HERE
         }
         else
         {
@@ -393,7 +397,7 @@ public class SceneManager : MonoBehaviour
     
     void updateContribution(double contrib)
     {
-        GameObject.Find("JerkLayout/ContributionSl").GetComponent<Slider>().value=(float)contrib;
+        //GameObject.Find("JerkLayout/ContributionSl").GetComponent<Slider>().value=(float)contrib;
     }
     
     double [] getPts()
