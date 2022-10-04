@@ -313,7 +313,7 @@ public class SceneManager : MonoBehaviour
         int bt_idx = int.Parse(bt.transform.parent.name);
         GameObject pts_list = GameObject.Find("PtsLayout");
         
-        if(pts_list.transform.childCount<5 && bt_idx+1 == pts_list.transform.childCount) {
+        if(pts_list.transform.childCount<6 && bt_idx+1 == pts_list.transform.childCount) {
             GameObject pt = GameObject.Find("PtsLayout/"+bt.transform.parent.name);
             GameObject new_pt = Instantiate(pt, pt.transform.parent);
             new_pt.name = (bt_idx+1).ToString("0");
@@ -327,9 +327,9 @@ public class SceneManager : MonoBehaviour
             GameObject.Find(vals_path+"x_val").GetComponent<InputField>().text="";
             GameObject.Find(vals_path+"y_val").GetComponent<InputField>().text="";
             GameObject.Find(vals_path+"z_val").GetComponent<InputField>().text="";
-            GameObject.Find(vals_path+"T_val").GetComponent<Slider>().value=1.0f;
+            GameObject.Find(vals_path+"T_val").GetComponent<Slider>().value=3.0f;
             Slider T_valSl = GameObject.Find(vals_path+"T_val").GetComponent<Slider>();
-            T_valSl.GetComponentsInChildren<TMPro.TextMeshProUGUI>()[1].text="1.0s";
+            T_valSl.GetComponentsInChildren<TMPro.TextMeshProUGUI>()[1].text="3.0s";
             T_valSl.onValueChanged.AddListener(delegate { UpdatePtTimeSlider(T_valSl.value, T_valSl); });
             //Disable delete on previous pt
             GameObject.Find("PtsLayout/"+bt.transform.parent.name+"/DelPtBt").GetComponent<Button>().interactable = false;
@@ -355,7 +355,7 @@ public class SceneManager : MonoBehaviour
             GameObject.Find(vals_path+"x_val").GetComponent<InputField>().text="";
             GameObject.Find(vals_path+"y_val").GetComponent<InputField>().text="";
             GameObject.Find(vals_path+"z_val").GetComponent<InputField>().text="";
-            GameObject.Find(vals_path+"T_val").GetComponent<Slider>().value=1.0f;
+            GameObject.Find(vals_path+"T_val").GetComponent<Slider>().value=3.0f;
             //Re-activate del button prev button
             GameObject.Find("PtsLayout/"+"0"+"/DelPtBt").GetComponent<Button>().interactable = true;
         }
