@@ -315,6 +315,7 @@ public class SceneManager : MonoBehaviour
         
         if(pts_list.transform.childCount<6 && bt_idx+1 == pts_list.transform.childCount) {
             GameObject pt = GameObject.Find("PtsLayout/"+bt.transform.parent.name);
+            GameObject.Find("PtsLayout/"+bt.transform.parent.name+"AddPtBt");
             GameObject new_pt = Instantiate(pt, pt.transform.parent);
             new_pt.name = (bt_idx+1).ToString("0");
             string bt_path="PtsLayout/"+new_pt.name+"/";
