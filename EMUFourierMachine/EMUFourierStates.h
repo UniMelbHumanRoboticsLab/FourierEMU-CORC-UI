@@ -1,7 +1,7 @@
 /**
  * \file M3DemoState.h
  * \author Vincent Crocher
- * \date 2022-08-17
+ * \date 2022-10-06
  *
  * \copyright Copyright (c) 2022
  *
@@ -154,7 +154,7 @@ class M3MassCompensation : public EMUFourierState {
 class M3PtToPt: public EMUFourierState {
 
    public:
-    M3PtToPt(RobotM3 * M3, EMUFourierMachine *sm, const char *name = "M3 Pt to Pt"):EMUFourierState(M3, sm, name) {};
+    M3PtToPt(RobotM3 * M3, EMUFourierMachine *sm, const char *name = "M3 Pt to Pt"):EMUFourierState(M3, sm, name) { };
 
     virtual void entryCode(void) = 0;
     virtual void duringCode(void) = 0;
@@ -211,8 +211,8 @@ class M3PathState : public M3PtToPt {
     void setAssistanceLevel(double a) { viscous_assistance = fmax(-30., fmin(30., a)); }
 
    private:
-    double k = 600;                 //! Impedance proportional gain (spring)
-    double d = 6;                   //! Impedance derivative gain (damper)
+    double k = 1400;                //! Impedance proportional gain (spring)
+    double d = 6.;                  //! Impedance derivative gain (damper)
     double viscous_assistance=0;    //! Viscous assistance along path
 };
 
@@ -231,8 +231,7 @@ class M3MinJerkPosition: public M3PtToPt {
     void exitCode(void);
 
    private:
-    //float k_i=1.; //! Integral gain
-    double k = 1100.;                //! Impedance proportional gain (spring)
+    double k = 1800.;                //! Impedance proportional gain (spring)
     double d = 3.;                   //! Impedance derivative gain (damper)
 };
 

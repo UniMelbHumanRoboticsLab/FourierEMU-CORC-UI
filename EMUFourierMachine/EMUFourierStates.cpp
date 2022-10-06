@@ -151,10 +151,10 @@ void M3MassCompensation::duringCode(void) {
     }
 
     //Calculate effective applied mass based on possible transition (change mass
-    applied_mass += sign(mass - applied_mass)*change_mass_rate*dt();
+    sm->MassComp += sign(mass - sm->MassComp)*change_mass_rate*dt();
 
     //Apply corresponding force
-    robot->setEndEffForceWithCompensation(VM3(0,0,applied_mass*9.8), true);
+    robot->setEndEffForceWithCompensation(VM3(0,0,sm->MassComp*9.8), true);
 
     //Mass controllable through keyboard inputs
     if(robot->keyboard->getS()) {
@@ -238,6 +238,9 @@ void M3PathState::duringCode(void) {
     //Assitive viscosity in path direction
     Fd+=viscous_assistance*b*dX_path;
 
+    //Add mass compensation feed-forward
+    Fd += VM3(0,0,sm->MassComp*9.8);
+
     //Apply force with gravity compensation but w/o friction compensation
     robot->setEndEffForceWithCompensation(Fd, false);
 
@@ -249,8 +252,10 @@ void M3PathState::duringCode(void) {
         if(trajPtIdx>=trajPts.size()){
             trajPtIdx=0;
         }
-        //From where we are
-        Xi=robot->getEndEffPosition();
+        /*From where we are
+        Xi=robot->getEndEffPosition();*/
+        //From last desired point on last path
+        Xi=Xd;
         //to next pt (if it exists)
         if(trajPts.size()>0) {
             Xf=trajPts[trajPtIdx].X;
@@ -274,6 +279,24 @@ void M3PathState::duringCode(void) {
             robot->printStatus();
         }
     }
+
+    /*For tuning only
+    if(robot->keyboard->getS()) {
+        k -=20;
+        std::cout << "k: " << k << std::endl;
+    }
+    if(robot->keyboard->getW()) {
+        k +=20;
+        std::cout << "k: " << k << std::endl;
+    }
+    if(robot->keyboard->getKeyUC()=='D') {
+        d -=0.5;
+        std::cout << "d: " << d << std::endl;
+    }
+    if(robot->keyboard->getKeyUC()=='E') {
+        d +=0.5;
+        std::cout << "d: " << d << std::endl;
+    }*/
 }
 void M3PathState::exitCode(void) {
     robot->setEndEffForceWithCompensation(VM3::Zero());
@@ -281,10 +304,6 @@ void M3PathState::exitCode(void) {
 
 
 void M3MinJerkPosition::entryCode(void) {
-    //Setup velocity control for position over velocity loop
-    /*robot->initVelocityControl();
-    robot->setJointVelocity(VM3::Zero());
-    k_i=1.;*/
     robot->setEndEffForceWithCompensation(VM3::Zero(), false);
 
     sm->Command = 4;
@@ -312,12 +331,15 @@ void M3MinJerkPosition::duringCode(void) {
     //Compute current desired interpolated point
     status=JerkIt(Xi, Xf, T, running()-startTime, Xd, dXd);
 
-    /*Apply position control
-    robot->setEndEffVelocity(dXd+k_i*(Xd-robot->getEndEffPosition()));*/
     //Impedance on current point
     Eigen::Matrix3d K = k*Eigen::Matrix3d::Identity();
     Eigen::Matrix3d D = d*Eigen::Matrix3d::Identity();
     VM3 Fd = impedance(K, D, Xd, robot->getEndEffPosition(), robot->getEndEffVelocity(), dXd);
+
+    //Add mass compensation feed-forward
+    Fd += VM3(0,0,sm->MassComp*9.8);
+
+    //Apply force
     robot->setEndEffForceWithCompensation(Fd, false);
 
     //Have we reached a point? And not currently feeding the pts list
@@ -355,8 +377,25 @@ void M3MinJerkPosition::duringCode(void) {
             robot->printStatus();
         }
     }
+
+    /*For tuning only
+    if(robot->keyboard->getS()) {
+        k -=20;
+        std::cout << "k: " << k << std::endl;
+    }
+    if(robot->keyboard->getW()) {
+        k +=20;
+        std::cout << "k: " << k << std::endl;
+    }
+    if(robot->keyboard->getKeyUC()=='D') {
+        d -=0.5;
+        std::cout << "d: " << d << std::endl;
+    }
+    if(robot->keyboard->getKeyUC()=='E') {
+        d +=0.5;
+        std::cout << "d: " << d << std::endl;
+    }*/
 }
 void M3MinJerkPosition::exitCode(void) {
-    //robot->setJointVelocity(VM3::Zero());
     robot->setEndEffForceWithCompensation(VM3::Zero());
 }

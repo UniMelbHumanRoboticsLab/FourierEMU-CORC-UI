@@ -2,7 +2,7 @@
  * \file EMUFourierMachine.h
  * \author Vincent Crocher
  * /brief The EMUFourierMachine class represents an example implementation of an M3 state machine.
- * \date 2022-08-17
+ * \date 2022-10-06
  *
  * \copyright Copyright (c) 2020 - 2022
  *
@@ -41,6 +41,7 @@ class EMUFourierMachine : public StateMachine {
     double Command = 0;         //!< Command (state) currently applied
     double MvtProgress = 0;     //!< Progress (status) along mvt
     double Contribution = 0;    //!< User contribution to mvt
+    double MassComp = 0;        //!< Current mass compensation
 };
 
 #endif /*M3_SM_H*/

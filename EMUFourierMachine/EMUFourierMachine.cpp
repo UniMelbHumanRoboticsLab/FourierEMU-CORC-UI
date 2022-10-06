@@ -114,8 +114,16 @@ bool goToJerk(StateMachine & SM) {
         }
     }
     else {
-        if ( sm.robot()->keyboard->getKeyUC()=='J' )
+        if ( sm.robot()->keyboard->getKeyUC()=='J' ) {
+            //TODO TO REMOVE: test points
+            std::shared_ptr<M3MinJerkPosition> s = sm.state<M3MinJerkPosition>("MinJerkState");
+            s->clearPts();
+            s->addPt(-0.688, -0.376, -0.323, 2.0);
+            s->addPt(-0.681, -0.138, -0.289, 2.0);
+            s->addPt(-0.907, -0.047, -0.251, 2.0);
+
             return true;
+        }
     }
 
     return false;
@@ -157,8 +165,15 @@ bool goToPath(StateMachine & SM) {
         }
     }
     else {
-        if ( sm.robot()->keyboard->getKeyUC()=='P' )
-            return true;
+        if ( sm.robot()->keyboard->getKeyUC()=='P' ) {
+            //TODO TO REMOVE: test points
+            std::shared_ptr<M3MinJerkPosition> s = sm.state<M3MinJerkPosition>("PathState");
+            s->clearPts();
+            s->addPt(-0.688, -0.376, -0.323, 2.0);
+            s->addPt(-0.681, -0.138, -0.289, 2.0);
+            s->addPt(-0.907, -0.047, -0.251, 2.0);
+             return true;
+        }
     }
 
     return false;
