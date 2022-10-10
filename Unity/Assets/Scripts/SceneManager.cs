@@ -71,7 +71,7 @@ public class SceneManager : MonoBehaviour
         
         //Control panel
         Button LockBt = GameObject.Find("ControlPanel/LockBt").GetComponent<Button>();
-        LockBt.GetComponentInChildren<TMPro.TextMeshProUGUI>().text = "Stop\n∩\n▀";
+        LockBt.GetComponentInChildren<TMPro.TextMeshProUGUI>().text = "Lock\n∩\n▀";
         LockBt.onClick.AddListener(() => { Lock(LockBt); });
         
         Slider MassSl = GameObject.Find("ControlPanel/MassSl").GetComponent<Slider>();
@@ -533,7 +533,7 @@ public class SceneManager : MonoBehaviour
     {
         if(bt.GetComponentInChildren<TMPro.TextMeshProUGUI>().text == "Lock\n∩\n▀") {
             Robot.SendCmd("GOLO");
-            bt.GetComponentInChildren<TMPro.TextMeshProUGUI>().text = "Unlock";
+            bt.GetComponentInChildren<TMPro.TextMeshProUGUI>().text = "Unlock\n∩\n   ▀";
             StartCoroutine(UpdateRetCmd());
         }
         else {
