@@ -199,8 +199,8 @@ public class SceneManager : MonoBehaviour
                 mvt_progress_50percent = (last_p<=0.5 && p>0.5) ? true : false;
             }
             int is_new_mvt = 0;
-            //If crossing 95% while already crossed 50:
-            if( (last_p<=0.95 && (p>0.95 || p<0.1)) && mvt_progress_50percent) {
+            //If crossing 98% while already crossed 50:
+            if( (last_p<=0.98 && (p>0.98 || p<0.1)) && mvt_progress_50percent) {
                 is_new_mvt = 1;
                 mvt_progress_50percent = false;
                 GameObject.Find("MvtSuccessSnd").GetComponent<AudioSource>().Play();
