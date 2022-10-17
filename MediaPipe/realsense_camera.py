@@ -11,12 +11,14 @@ class RealsenseCamera:
         self.pipeline = rs.pipeline()
 
         config = rs.config()
+        fps = 30
+        self.recording = recording
         if(config.can_resolve(self.pipeline)):
                 if(recording):
                         config.enable_record_to_file(datetime.now().strftime("../%d_%m_%Y-%H_%M_%S")+'.bag')#Save to file as well
                 print("Realsense Camera Ok")
-                config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
-                config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
+                config.enable_stream(rs.stream.color, 640, 480, rs.format.rgb8, fps)
+                config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, fps)
                 # Start streaming
                 p_profile = self.pipeline.start(config)
                 align_to = rs.stream.color

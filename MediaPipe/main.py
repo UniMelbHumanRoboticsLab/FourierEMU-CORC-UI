@@ -36,8 +36,7 @@ class PoseDetector:
         self.pose = self.mpPose.Pose(model_complexity=0, min_detection_confidence=0.5, min_tracking_confidence=0.5)
 
     def findPose(self, img, arm_side, objects_to_track, draw=False):
-        imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        self.results = self.pose.process(imgRGB)
+        self.results = self.pose.process(img)
 
         if draw:
             if arm_side=='r':
@@ -224,6 +223,7 @@ def main():
     if len(sys.argv)>2:
         if sys.argv[2] == "1":
             recording=True
+            video=cv2.VideoWriter(datetime.now().strftime("../%d_%m_%Y-%H_%M_%S")+'.mp4', cv2.VideoWriter_fourcc(*'MP4V'), 25, (640,480))
             print("Recording ON")
         else:
             recording=False
@@ -289,6 +289,8 @@ def main():
             ret, color_image, depth_image = rs.get_frame_stream()
             # copy
             frame = color_image.copy()
+            
+            color_image = cv2.cvtColor(color_image, cv2.COLOR_BGR2RGB)
         else:
             # Webcam otherwise
             sucess, frame = cap.read()
@@ -309,6 +311,9 @@ def main():
 
         ## Send joint positions and tag frame when valid values
         if(streaming):
+            if(recording):
+                video.write(color_image)
+        
             if len(jointsPosImg)>0:
                 ## Build values to send: ArmSide (0:l,1:r), joints img pos, 3d img pos
                 val = []
@@ -408,10 +413,14 @@ def main():
     print("Disconnected. Exiting...")
     
     ## Exit
+    streaming=False
     if(not noClientTesting):
         if(server.IsConnected()):
             server.Close()
     if(rs.init):
+        if(recording):
+            rs.recorder.pause()
+            video.release()
         rs.release()
     else:
         cap.release()

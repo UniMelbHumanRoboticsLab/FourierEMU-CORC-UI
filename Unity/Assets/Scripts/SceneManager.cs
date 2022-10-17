@@ -139,8 +139,7 @@ public class SceneManager : MonoBehaviour
             Status.text += "\tF:";
             foreach (double val in Robot.State["F"])
                 Status.text += val.ToString("00.0") + " \t";
-                
-            //TODO ISSUE AROUND HERE
+
             Status.text += "\n";
             Status.text += "Command: ";
             Status.text += Robot.State["Command"][0].ToString("0");
@@ -177,8 +176,6 @@ public class SceneManager : MonoBehaviour
             Arrow.transform.localPosition = new Vector3(0, 0, force.magnitude / force_scale);
             Arrow.transform.localScale = new Vector3(0.2f, force.magnitude / force_scale, 0.2f);
             Cursor.transform.LookAt(Cursor.transform.position - force);
-            
-            //TODO AND HERE
         }
         else
         {
@@ -202,8 +199,8 @@ public class SceneManager : MonoBehaviour
                 mvt_progress_50percent = (last_p<=0.5 && p>0.5) ? true : false;
             }
             int is_new_mvt = 0;
-            //If crossing 90% while already crossed 50:
-            if( (last_p<=0.9 && p>0.9) && mvt_progress_50percent) {
+            //If crossing 95% while already crossed 50:
+            if( (last_p<=0.95 && (p>0.95 || p<0.1)) && mvt_progress_50percent) {
                 is_new_mvt = 1;
                 mvt_progress_50percent = false;
                 GameObject.Find("MvtSuccessSnd").GetComponent<AudioSource>().Play();
@@ -303,7 +300,7 @@ public class SceneManager : MonoBehaviour
     
     void AddPt(Button bt)
     {
-        //Fill in pt value
+        //Fill in the pt value
         string vals_path = "PtsLayout/"+bt.transform.parent.name+"/VertLayout/PtLayout/";
         GameObject.Find(vals_path+"x_val").GetComponent<InputField>().text = Robot.State["X"][0].ToString(".000");
         GameObject.Find(vals_path+"y_val").GetComponent<InputField>().text = Robot.State["X"][1].ToString(".000");
@@ -332,8 +329,6 @@ public class SceneManager : MonoBehaviour
             Slider T_valSl = GameObject.Find(vals_path+"T_val").GetComponent<Slider>();
             T_valSl.GetComponentsInChildren<TMPro.TextMeshProUGUI>()[1].text="3.0s";
             T_valSl.onValueChanged.AddListener(delegate { UpdatePtTimeSlider(T_valSl.value, T_valSl); });
-            //Disable delete on previous pt
-            GameObject.Find("PtsLayout/"+bt.transform.parent.name+"/DelPtBt").GetComponent<Button>().interactable = false;
         }
     }
     
@@ -343,22 +338,34 @@ public class SceneManager : MonoBehaviour
         int bt_idx = int.Parse(bt.transform.parent.name);
         GameObject pts_list = GameObject.Find("PtsLayout");
         
-        if(bt_idx>0) {
-            GameObject pt = GameObject.Find("PtsLayout/"+(bt_idx).ToString("0"));
-            Destroy(pt);
-            //Re-activate del button prev button
-            GameObject.Find("PtsLayout/"+(bt_idx-1).ToString("0")+"/DelPtBt").GetComponent<Button>().interactable = true;
+        //Nothing to do if last pt not keyed in yet
+        if(GameObject.Find("PtsLayout/"+(bt_idx).ToString("0")+"/VertLayout/PtLayout/"+"x_val").GetComponent<InputField>().text == "") {
+            return; 
         }
-        else
-        {
-            //Clear values
+        
+        //Actually remove the point layout?
+        if(pts_list.transform.childCount>1) {
+            GameObject pt_del = GameObject.Find("PtsLayout/"+(bt_idx).ToString("0"));
+            Destroy(pt_del); //Destruction will happen only at next loop
+            //Rename (re-number) the remaining ones
+            int n=0;
+            foreach (Transform pt in pts_list.transform)
+            {
+              if(pt.name != bt_idx.ToString("0"))
+              {
+                pt.name = n.ToString("0");
+                Debug.Log(n.ToString("0") + " : " + pt.name);
+                n++;
+              }
+            }
+        }
+        else {
+            //Or just clear values if it is the first point
             string vals_path = "PtsLayout/"+"0"+"/VertLayout/PtLayout/";
             GameObject.Find(vals_path+"x_val").GetComponent<InputField>().text="";
             GameObject.Find(vals_path+"y_val").GetComponent<InputField>().text="";
             GameObject.Find(vals_path+"z_val").GetComponent<InputField>().text="";
             GameObject.Find(vals_path+"T_val").GetComponent<Slider>().value=3.0f;
-            //Re-activate del button prev button
-            GameObject.Find("PtsLayout/"+"0"+"/DelPtBt").GetComponent<Button>().interactable = true;
         }
     }
     
