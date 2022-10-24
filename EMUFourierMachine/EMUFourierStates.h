@@ -18,9 +18,10 @@ class EMUFourierMachine;
 
 typedef struct M3TrajPt
 {
-    M3TrajPt (double x, double y, double z, double tf): X(VM3(x, y, z)), T(tf) {};
-    VM3 X;
-    double T;
+    M3TrajPt (double x, double y, double z, double tf, double tp=.0): X(VM3(x, y, z)), T(tf), Tpause(tp) {};
+    VM3 X; //! Point position
+    double T; //! Time to reach point
+    double Tpause; //! Pause time when reached point
 } M3TrajPt;
 
 
@@ -165,13 +166,16 @@ class M3PtToPt: public EMUFourierState {
         stop=true;
     }
 
-    bool addPt(double x, double y, double z, double tf) {
+    bool addPt(double x, double y, double z, double tf, double tp=.0) {
         //Lock robot: don't use pts while fed in
         stop=true;
         if(tf<0) {
             return false;
         }
-        trajPts.push_back(M3TrajPt(x,y,z,tf));
+        if(tp<0) {
+            return false;
+        }
+        trajPts.push_back(M3TrajPt(x,y,z,tf, tp));
         //Unlock
         stop=false;
 
@@ -189,7 +193,8 @@ class M3PtToPt: public EMUFourierState {
     double startTime;
     std::vector<M3TrajPt> trajPts;
     VM3 Xi, Xf;
-    double T;
+    double T, Tpause;
+    bool paused;
 };
 
 
@@ -213,7 +218,8 @@ class M3PathState : public M3PtToPt {
    private:
     double k = 1400;                //! Impedance proportional gain (spring)
     double d = 6.;                  //! Impedance derivative gain (damper)
-    double viscous_assistance=0;    //! Viscous assistance along path
+    double viscous_assistance = 0;  //! Viscous assistance along path
+    double veryFirstPt = true;
 };
 
 

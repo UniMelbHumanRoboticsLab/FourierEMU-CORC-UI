@@ -190,6 +190,9 @@ void M3PathState::entryCode(void) {
         Xf=robot->getEndEffPosition();
     }
 
+    veryFirstPt=true;
+    startTime=running();
+    paused=false; //not used
     status=.0;
 }
 void M3PathState::duringCode(void) {
@@ -197,46 +200,61 @@ void M3PathState::duringCode(void) {
     VM3 dX=robot->getEndEffVelocity();
     VM3 Xd=Xi;
     VM3 Fd(0,0,0);
+    double status = 0;
 
-    //Find closest point on path
-    VM3 PathUnitV=(Xf-Xi)/(Xf-Xi).norm();
-    Xd = Xi + ( (X-Xi).dot(PathUnitV)*PathUnitV);
+    //Normal operation: apply path guidance w/ assistance
+    if(!veryFirstPt) {
+        //Find closest point on path
+        VM3 PathUnitV=(Xf-Xi)/(Xf-Xi).norm();
+        Xd = Xi + ( (X-Xi).dot(PathUnitV)*PathUnitV);
 
-    //Progress along path
-    double status = sign((X-Xi).dot(PathUnitV))*(Xd-Xi).norm()/(Xf-Xi).norm();
-    double b=0;
-    //Assistance progressive up and down in first and last 10% of movement
-    if(status>=0.1 && status<0.9) {
-        b = 1.0;
-    }
-    if(status<0.1) {
-        b = status*10.;
-    }
-    if(status>0.9) {
-        b = (1-status)*10.;
-    }
-    if(status<=0) {
-        //"Before" Xi
-        Xd = Xi;
-        b = 0.;
-    }
-    if(status>=1) {
-        //After "Xf"
-        Xd = Xf;
-        b = 0.;
-    }
+        //Progress along path
+        status = sign((X-Xi).dot(PathUnitV))*(Xd-Xi).norm()/(Xf-Xi).norm();
+        double b=0;
+        //Assistance progressive up and down in first and last 10% of movement
+        if(status>=0.1 && status<0.9) {
+            b = 1.0;
+        }
+        if(status<0.1) {
+            b = status*10.;
+        }
+        if(status>0.9) {
+            b = (1-status)*10.;
+        }
+        if(status<=0) {
+            //"Before" Xi
+            Xd = Xi;
+            b = 0.;
+        }
+        if(status>=1) {
+            //After "Xf"
+            Xd = Xf;
+            b = 0.;
+        }
 
-    //Velocity vector projection
-    VM3 dX_path = dX.dot(PathUnitV)*PathUnitV;
-    VM3 dX_ortho = dX - dX_path;
+        //Velocity vector projection
+        VM3 dX_path = dX.dot(PathUnitV)*PathUnitV;
+        VM3 dX_ortho = dX - dX_path;
 
-    //Impedance towards path  point with only ortho velocity component
-    Eigen::Matrix3d K = k*Eigen::Matrix3d::Identity();
-    Eigen::Matrix3d D = d*Eigen::Matrix3d::Identity();
-    Fd = impedance(K, D, Xd, X, dX_ortho);
+        //Impedance towards path  point with only ortho velocity component
+        Eigen::Matrix3d K = k*Eigen::Matrix3d::Identity();
+        Eigen::Matrix3d D = d*Eigen::Matrix3d::Identity();
+        Fd = impedance(K, D, Xd, X, dX_ortho);
 
-    //Assitive viscosity in path direction
-    Fd+=viscous_assistance*b*dX_path;
+        //Assitive viscosity in path direction
+        Fd+=viscous_assistance*b*dX_path;
+    }
+    //If this is the very first point: bring arm using passive mobilisation
+    else {
+        VM3 dXd;
+        //Compute current desired interpolated point. Arbitrary 2s.
+        status = JerkIt(Xi, Xf, 2.0, running()-startTime, Xd, dXd);
+
+        //Impedance on current point
+        Eigen::Matrix3d K = k*Eigen::Matrix3d::Identity();
+        Eigen::Matrix3d D = d*Eigen::Matrix3d::Identity();
+        Fd = impedance(K, D, Xd, X, dX, dXd);
+    }
 
     //Add mass compensation feed-forward
     Fd += VM3(0,0,sm->MassComp*9.8);
@@ -263,6 +281,7 @@ void M3PathState::duringCode(void) {
         else {
             Xf=robot->getEndEffPosition();
         }
+        veryFirstPt=false;
     }
      sm->MvtProgress = trajPtIdx+status;
 
@@ -280,7 +299,7 @@ void M3PathState::duringCode(void) {
         }
     }
 
-    /*For tuning only
+    /*For gains tuning only
     if(robot->keyboard->getS()) {
         k -=20;
         std::cout << "k: " << k << std::endl;
@@ -317,12 +336,15 @@ void M3MinJerkPosition::entryCode(void) {
     if(trajPts.size()>0) {
         Xf=trajPts[trajPtIdx].X;
         T=trajPts[trajPtIdx].T;
+        Tpause=trajPts[trajPtIdx].Tpause;
     }
     else {
         Xf=robot->getEndEffPosition();
         T=.1;
+        Tpause=.0;
     }
 
+    paused=false;
     status=.0;
 }
 void M3MinJerkPosition::duringCode(void) {
@@ -342,7 +364,41 @@ void M3MinJerkPosition::duringCode(void) {
     //Apply force
     robot->setEndEffForceWithCompensation(Fd, false);
 
-    //Have we reached a point? And not currently feeding the pts list
+    //Have we reached a point? (And not currently feeding the pts list)
+    if(status>=1. && !stop) {
+        //Should we pause here?
+        if(!paused && Tpause>0) {
+            paused=true;
+            Xi=Xf;
+            T=Tpause;
+            startTime=running();
+        }
+        //Or move to next point?
+        else {
+            //Go to next point
+            trajPtIdx++;
+            if(trajPtIdx>=trajPts.size()){
+                trajPtIdx=0;
+            }
+            //From where we were
+            Xi=Xf;
+            //to next pt (if it exists)
+            if(trajPts.size()>0) {
+                Xf=trajPts[trajPtIdx].X;
+                T=trajPts[trajPtIdx].T;
+                Tpause=trajPts[trajPtIdx].Tpause;
+            }
+            else {
+                Xf=robot->getEndEffPosition();
+                T=0;
+                Tpause=0;
+            }
+            paused=false;
+            startTime=running();
+        }
+    }
+
+    /*//Have we reached a point?
     if(status>=1. && !stop) {
         //Go to next point
         trajPtIdx++;
@@ -361,24 +417,29 @@ void M3MinJerkPosition::duringCode(void) {
             T=0;
         }
         startTime=running();
-    }
-    sm->MvtProgress = trajPtIdx+status;
+    }*/
+    if(!paused) {
+        sm->MvtProgress = trajPtIdx+status;
 
-    //Display progression
-    if(spdlog::get_level()<=spdlog::level::debug) {
-        if(iterations()%100==1) {
-            std::cout << "Progress (Point "<< trajPtIdx << ") |";
-            for(int i=0; i<round(status*50.); i++)
-                std::cout << "=";
-            for(int i=0; i<round((1-status)*50.); i++)
-                std::cout << "-";
+        //Display progression
+        if(spdlog::get_level()<=spdlog::level::debug) {
+            if(iterations()%100==1) {
+                std::cout << "Progress (Point "<< trajPtIdx << ") |";
+                for(int i=0; i<round(status*50.); i++)
+                    std::cout << "=";
+                for(int i=0; i<round((1-status)*50.); i++)
+                    std::cout << "-";
 
-            std::cout << "| (" << status*100 << "%)  ";
-            robot->printStatus();
+                std::cout << "| (" << status*100 << "%)  ";
+                robot->printStatus();
+            }
         }
     }
+    else {
+        sm->MvtProgress = trajPtIdx+0.999;
+    }
 
-    /*For tuning only
+    /*For gains tuning only
     if(robot->keyboard->getS()) {
         k -=20;
         std::cout << "k: " << k << std::endl;

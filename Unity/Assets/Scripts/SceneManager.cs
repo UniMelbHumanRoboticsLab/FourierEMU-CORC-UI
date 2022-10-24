@@ -99,9 +99,11 @@ public class SceneManager : MonoBehaviour
         
         Button GoPathBt = GameObject.Find("PathLayout/GoPathBt").GetComponent<Button>();
         GoPathBt.onClick.AddListener(() => { GoPath(PtsLayout, AssistanceSl.value); });
-        
+
         Slider T_valSl = GameObject.Find("T_val").GetComponent<Slider>();
         T_valSl.onValueChanged.AddListener(delegate { UpdatePtTimeSlider(T_valSl.value, T_valSl); });
+        Slider T_pauseSl = GameObject.Find("T_pause_val").GetComponent<Slider>();
+        T_pauseSl.onValueChanged.AddListener(delegate { UpdatePtPauseTimeSlider(T_pauseSl.value, T_pauseSl); });
         
         //Add pt
         string bt_path="PtsLayout/0/";
@@ -296,21 +298,93 @@ public class SceneManager : MonoBehaviour
     {
         sl.GetComponentsInChildren<TMPro.TextMeshProUGUI>()[1].text=v.ToString("0.0s");
     }
+    
+    void UpdatePtPauseTimeSlider(float v, Slider sl)
+    {
+        sl.GetComponentsInChildren<TMPro.TextMeshProUGUI>()[1].text=v.ToString("0s");
+    }
+    
+    // Update the distance indicator on each point registered (delayed to wait for update when point has been deleted)
+    IEnumerator UpdatePtsDistanceValues()
+    {
+        yield return new WaitForSeconds(0.1f);
+        
+        GameObject pts_list = GameObject.Find("PtsLayout");
+        
+        int nb_pts = 0;
+        foreach (Transform pt in pts_list.transform)
+        {
+          //Check if valid point (w/ values)
+          if(GameObject.Find("PtsLayout/"+pt.name+"/VertLayout/PtLayout/"+"Hidden/x_val").GetComponent<InputField>().text != "")
+          {
+              nb_pts++;
+          }
+        }
+        
+        //No active pt
+        if(nb_pts==0)
+        {
+             GameObject.Find("PtsLayout/0/VertLayout/PtLayout/d_val").GetComponent<InputField>().text="";
+        }
+        //Only one pt: distance set to 0
+        else if(nb_pts==1)
+        {
+            GameObject.Find("PtsLayout/0/VertLayout/PtLayout/d_val").GetComponent<InputField>().text="0"+"cm";
+        }
+        else
+        {
+            string vals_path_prev="";
+            string vals_path="";
+            for(int idx=0;idx<nb_pts;idx++)
+            {
+                if(idx == 0)
+                {
+                    //last pt is the prev pt
+                    vals_path_prev = "PtsLayout/"+(nb_pts-1).ToString("0")+"/VertLayout/PtLayout/";
+                }
+                else
+                {
+                    //prev pt
+                    vals_path_prev = "PtsLayout/"+(idx-1).ToString("0")+"/VertLayout/PtLayout/";
+                }
+                //current pt
+                vals_path = "PtsLayout/"+idx.ToString("0")+"/VertLayout/PtLayout/";
+                
+                //prev pt
+                double x0 = double.Parse(GameObject.Find(vals_path_prev+"Hidden/x_val").GetComponent<InputField
+                >().text);
+                double y0 = double.Parse(GameObject.Find(vals_path_prev+"Hidden/y_val").GetComponent<InputField>().text);
+                double z0 = double.Parse(GameObject.Find(vals_path_prev+"Hidden/z_val").GetComponent<InputField>().text);
+                //current pt
+                double x1 = double.Parse(GameObject.Find(vals_path+"Hidden/x_val").GetComponent<InputField
+                >().text);
+                double y1 = double.Parse(GameObject.Find(vals_path+"Hidden/y_val").GetComponent<InputField>().text);
+                double z1 = double.Parse(GameObject.Find(vals_path+"Hidden/z_val").GetComponent<InputField>().text);
+                //Distance
+                float d = Mathf.Sqrt((float)((x0-x1)*(x0-x1)+(y0-y1)*(y0-y1)+(z0-z1)*(z0-z1)))*100; //shown in cm
+                GameObject.Find(vals_path+"d_val").GetComponent<InputField>().text = d.ToString("0")+"cm";
+            }
+        }
+    }
 
     
     void AddPt(Button bt)
     {
         //Fill in the pt value
         string vals_path = "PtsLayout/"+bt.transform.parent.name+"/VertLayout/PtLayout/";
-        GameObject.Find(vals_path+"x_val").GetComponent<InputField>().text = Robot.State["X"][0].ToString(".000");
-        GameObject.Find(vals_path+"y_val").GetComponent<InputField>().text = Robot.State["X"][1].ToString(".000");
-        GameObject.Find(vals_path+"z_val").GetComponent<InputField>().text = Robot.State["X"][2].ToString(".000");
+        GameObject.Find(vals_path+"Hidden/x_val").GetComponent<InputField>().text = Robot.State["X"][0].ToString(".000");
+        GameObject.Find(vals_path+"Hidden/y_val").GetComponent<InputField>().text = Robot.State["X"][1].ToString(".000");
+        GameObject.Find(vals_path+"Hidden/z_val").GetComponent<InputField>().text = Robot.State["X"][2].ToString(".000");
+        
+        //Update distance to previous point value
+        StartCoroutine(UpdatePtsDistanceValues());
         
         //Add a new Pt if required
         int bt_idx = int.Parse(bt.transform.parent.name);
         GameObject pts_list = GameObject.Find("PtsLayout");
         
-        if(pts_list.transform.childCount<6 && bt_idx+1 == pts_list.transform.childCount) {
+        if(pts_list.transform.childCount<6 && bt_idx+1 == pts_list.transform.childCount)
+        {
             GameObject pt = GameObject.Find("PtsLayout/"+bt.transform.parent.name);
             GameObject.Find("PtsLayout/"+bt.transform.parent.name+"AddPtBt");
             GameObject new_pt = Instantiate(pt, pt.transform.parent);
@@ -322,13 +396,19 @@ public class SceneManager : MonoBehaviour
             DelPtBt.onClick.AddListener(() => { DelPt(DelPtBt); });
             //Clear values
             vals_path = "PtsLayout/"+new_pt.name+"/VertLayout/PtLayout/";
-            GameObject.Find(vals_path+"x_val").GetComponent<InputField>().text="";
-            GameObject.Find(vals_path+"y_val").GetComponent<InputField>().text="";
-            GameObject.Find(vals_path+"z_val").GetComponent<InputField>().text="";
+            GameObject.Find(vals_path+"Hidden/x_val").GetComponent<InputField>().text="";
+            GameObject.Find(vals_path+"Hidden/y_val").GetComponent<InputField>().text="";
+            GameObject.Find(vals_path+"Hidden/z_val").GetComponent<InputField>().text="";
+            GameObject.Find(vals_path+"d_val").GetComponent<InputField>().text="";
             GameObject.Find(vals_path+"T_val").GetComponent<Slider>().value=3.0f;
             Slider T_valSl = GameObject.Find(vals_path+"T_val").GetComponent<Slider>();
             T_valSl.GetComponentsInChildren<TMPro.TextMeshProUGUI>()[1].text="3.0s";
             T_valSl.onValueChanged.AddListener(delegate { UpdatePtTimeSlider(T_valSl.value, T_valSl); });
+            
+            Slider T_pauseSl = GameObject.Find(vals_path+"T_pause_val").GetComponent<Slider>();
+            T_pauseSl.value=0f;
+            T_pauseSl.GetComponentsInChildren<TMPro.TextMeshProUGUI>()[1].text="0s";
+            T_pauseSl.onValueChanged.AddListener(delegate { UpdatePtPauseTimeSlider(T_pauseSl.value, T_pauseSl); });
         }
     }
     
@@ -339,12 +419,14 @@ public class SceneManager : MonoBehaviour
         GameObject pts_list = GameObject.Find("PtsLayout");
         
         //Nothing to do if last pt not keyed in yet
-        if(GameObject.Find("PtsLayout/"+(bt_idx).ToString("0")+"/VertLayout/PtLayout/"+"x_val").GetComponent<InputField>().text == "") {
+        if(GameObject.Find("PtsLayout/"+(bt_idx).ToString("0")+"/VertLayout/PtLayout/"+"Hidden/x_val").GetComponent<InputField>().text == "")
+        {
             return; 
         }
         
         //Actually remove the point layout?
-        if(pts_list.transform.childCount>1) {
+        if(pts_list.transform.childCount>1)
+        {
             GameObject pt_del = GameObject.Find("PtsLayout/"+(bt_idx).ToString("0"));
             Destroy(pt_del); //Destruction will happen only at next loop
             //Rename (re-number) the remaining ones
@@ -354,19 +436,23 @@ public class SceneManager : MonoBehaviour
               if(pt.name != bt_idx.ToString("0"))
               {
                 pt.name = n.ToString("0");
-                Debug.Log(n.ToString("0") + " : " + pt.name);
                 n++;
               }
             }
         }
-        else {
+        else
+        {
             //Or just clear values if it is the first point
             string vals_path = "PtsLayout/"+"0"+"/VertLayout/PtLayout/";
-            GameObject.Find(vals_path+"x_val").GetComponent<InputField>().text="";
-            GameObject.Find(vals_path+"y_val").GetComponent<InputField>().text="";
-            GameObject.Find(vals_path+"z_val").GetComponent<InputField>().text="";
+            GameObject.Find(vals_path+"Hidden/x_val").GetComponent<InputField>().text="";
+            GameObject.Find(vals_path+"Hidden/y_val").GetComponent<InputField>().text="";
+            GameObject.Find(vals_path+"Hidden/z_val").GetComponent<InputField>().text="";
             GameObject.Find(vals_path+"T_val").GetComponent<Slider>().value=3.0f;
+            GameObject.Find(vals_path+"T_pause_val").GetComponent<Slider>().value=0f;
         }
+        
+        //Update distance to previous point value
+        StartCoroutine(UpdatePtsDistanceValues());
     }
     
     void updatePtsProgress(double progress)
@@ -404,8 +490,7 @@ public class SceneManager : MonoBehaviour
     }
     
     void updateContribution(double contrib)
-    {
-        //GameObject.Find("JerkLayout/ContributionSl").GetComponent<Slider>().value=(float)contrib;
+    {   //GameObject.Find("JerkLayout/ContributionSl").GetComponent<Slider>().value=(float)contrib;
     }
     
     double [] getPts()
@@ -417,7 +502,7 @@ public class SceneManager : MonoBehaviour
         foreach (Transform pt in pts_list.transform)
         {
           //Check if valid point (w/ values)
-          if(GameObject.Find("PtsLayout/"+pt.name+"/VertLayout/PtLayout/"+"x_val").GetComponent<InputField>().text != "")
+          if(GameObject.Find("PtsLayout/"+pt.name+"/VertLayout/PtLayout/"+"Hidden/x_val").GetComponent<InputField>().text != "")
           {
               nb_pts++;
           }
@@ -429,16 +514,18 @@ public class SceneManager : MonoBehaviour
         {
             string pt_path="PtsLayout/"+i.ToString("0")+"/VertLayout/PtLayout/";
             //x
-            InputField inp = GameObject.Find(pt_path+"x_val").GetComponent<InputField>();
+            InputField inp = GameObject.Find(pt_path+"Hidden/x_val").GetComponent<InputField>();
             p.Add(double.Parse(inp.text));
             //y
-            inp = GameObject.Find(pt_path+"y_val").GetComponent<InputField>();
+            inp = GameObject.Find(pt_path+"Hidden/y_val").GetComponent<InputField>();
             p.Add(double.Parse(inp.text));
             //z
-            inp = GameObject.Find(pt_path+"z_val").GetComponent<InputField>();
+            inp = GameObject.Find(pt_path+"Hidden/z_val").GetComponent<InputField>();
             p.Add(double.Parse(inp.text));
             //T
             p.Add(GameObject.Find(pt_path+"T_val").GetComponent<Slider>().value);
+            //Pause T TODO
+            p.Add(GameObject.Find(pt_path+"T_pause_val").GetComponent<Slider>().value);
         }
         
         return p.ToArray();
@@ -538,12 +625,14 @@ public class SceneManager : MonoBehaviour
 
     void Lock(Button bt)
     {
-        if(bt.GetComponentInChildren<TMPro.TextMeshProUGUI>().text == "Lock\n∩\n▀") {
+        if(bt.GetComponentInChildren<TMPro.TextMeshProUGUI>().text == "Lock\n∩\n▀")
+        {
             Robot.SendCmd("GOLO");
             bt.GetComponentInChildren<TMPro.TextMeshProUGUI>().text = "Unlock\n∩\n   ▀";
             StartCoroutine(UpdateRetCmd());
         }
-        else {
+        else
+        {
             Robot.SendCmd("GOUN");
             bt.GetComponentInChildren<TMPro.TextMeshProUGUI>().text = "Lock\n∩\n▀";
             StartCoroutine(UpdateRetCmd());
@@ -585,7 +674,8 @@ public class SceneManager : MonoBehaviour
         if (!Robot.IsInitialised())
         {
             Robot.Init(ip.text);
-            if(Robot.IsInitialised()) {
+            if(Robot.IsInitialised())
+            {
                 Logger = new MvtLogger(Robot, flags, GameObject.Find("AdminPanel/LogSensors").GetComponent<Text>());
                 if(Logger.InitSensors())
                 {

@@ -86,15 +86,15 @@ bool goToJerk(StateMachine & SM) {
         if(params.size()>0) {
             //Parse parameters: first is nb of pts followed by pts: (x,y,z,tf)
             unsigned int nbpts= (int)params[0];
-            if(params.size() == 1+nbpts*4) {
+            if(params.size() == 1+nbpts*5) {
                 std::shared_ptr<M3MinJerkPosition> s = sm.state<M3MinJerkPosition>("MinJerkState");
                 s->clearPts();
                 int idx = 1;
                 //Fill in trajectory pts
                 for(unsigned int i=0; i<nbpts; i++) {
-                    s->addPt(params[idx], params[idx+1], params[idx+2], params[idx+3]);
-                    spdlog::debug("goToJerk: Added point ({},{},{}:{}).", params[idx], params[idx+1], params[idx+2], params[idx+3]);
-                    idx+=4;
+                    s->addPt(params[idx], params[idx+1], params[idx+2], params[idx+3], params[idx+4]);
+                    spdlog::debug("goToJerk: Added point ({},{},{}:{}:{}).", params[idx], params[idx+1], params[idx+2], params[idx+3], params[idx+4]);
+                    idx+=5;
                 }
 
                 spdlog::debug("goToJerk: Fed {} trajectory points.", nbpts);
@@ -118,9 +118,9 @@ bool goToJerk(StateMachine & SM) {
             //TODO TO REMOVE: test points
             std::shared_ptr<M3MinJerkPosition> s = sm.state<M3MinJerkPosition>("MinJerkState");
             s->clearPts();
-            s->addPt(-0.688, -0.376, -0.323, 2.0);
-            s->addPt(-0.681, -0.138, -0.289, 2.0);
-            s->addPt(-0.907, -0.047, -0.251, 2.0);
+            s->addPt(-0.688, -0.376, -0.323, 2.0, .0);
+            s->addPt(-0.681, -0.138, -0.289, 2.0, 3.0);
+            s->addPt(-0.907, -0.047, -0.251, 2.0, 1.0);
 
             return true;
         }
@@ -137,15 +137,15 @@ bool goToPath(StateMachine & SM) {
         if(params.size() >0) {
             //Parse parameters: first is nb of pts followed by pts: (x,y,z,tf)
             unsigned int nbpts = (int)params[0];
-            if(params.size() == 1+nbpts*4) {
+            if(params.size() == 1+nbpts*5) {
                 std::shared_ptr<M3PathState> s = sm.state<M3PathState>("PathState");
                 s->clearPts();
                 int idx = 1;
                 //Fill in trajectory pts
                 for(unsigned int i=0; i<nbpts; i++) {
-                    s->addPt(params[idx], params[idx+1], params[idx+2], params[idx+3]);
-                    spdlog::debug("goToPath: Added point ({},{},{}:{}).", params[idx], params[idx+1], params[idx+2], params[idx+3]);
-                    idx+=4;
+                    s->addPt(params[idx], params[idx+1], params[idx+2], params[idx+3], params[idx+4]);
+                    spdlog::debug("goToPath: Added point ({},{},{}:{}).", params[idx], params[idx+1], params[idx+2], params[idx+3], params[idx+4]);
+                    idx+=5;
                 }
 
                 spdlog::debug("goToPath: Fed {} trajectory points.", nbpts);
@@ -169,10 +169,10 @@ bool goToPath(StateMachine & SM) {
             //TODO TO REMOVE: test points
             std::shared_ptr<M3MinJerkPosition> s = sm.state<M3MinJerkPosition>("PathState");
             s->clearPts();
-            s->addPt(-0.688, -0.376, -0.323, 2.0);
-            s->addPt(-0.681, -0.138, -0.289, 2.0);
-            s->addPt(-0.907, -0.047, -0.251, 2.0);
-             return true;
+            s->addPt(-0.688, -0.376, -0.323, 2.0, .0);
+            s->addPt(-0.681, -0.138, -0.289, 2.0, 3.0);
+            s->addPt(-0.907, -0.047, -0.251, 2.0, 1.0);
+            return true;
         }
     }
 
