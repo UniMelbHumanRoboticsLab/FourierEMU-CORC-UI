@@ -134,7 +134,7 @@ void M3LockState::exitCode(void) {
 
 void M3MassCompensation::entryCode(void) {
     //robot->initTorqueControl();
-    robot->setEndEffForceWithCompensation(VM3::Zero(), false);
+    robot->setEndEffForceWithCompensation(VM3(0,0,sm->MassComp*9.8), false);
     sm->Command = 2;
     sm->Contribution = .0;
     sm->MvtProgress = .0;
@@ -153,8 +153,15 @@ void M3MassCompensation::duringCode(void) {
     //Calculate effective applied mass based on possible transition (change mass
     sm->MassComp += sign(mass - sm->MassComp)*change_mass_rate*dt();
 
-    //Apply corresponding force
-    robot->setEndEffForceWithCompensation(VM3(0,0,sm->MassComp*9.8), true);
+    //If after transitioning dampin time
+    if(running()>transition_t) {
+        //Apply corresponding deweighting force
+        robot->setEndEffForceWithCompensation(VM3(0,0,sm->MassComp*9.8), true);
+    }
+    else {
+        //Apply corresponding deweighting force w/o friction comp
+        robot->setEndEffForceWithCompensation(VM3(0,0,sm->MassComp*9.8), false);
+    }
 
     //Mass controllable through keyboard inputs
     if(robot->keyboard->getS()) {
@@ -169,7 +176,7 @@ void M3MassCompensation::duringCode(void) {
     }
 }
 void M3MassCompensation::exitCode(void) {
-    robot->setEndEffForceWithCompensation(VM3(0,0,0));
+    robot->setEndEffForceWithCompensation(VM3(0,0,sm->MassComp*9.8), false);
 }
 
 
