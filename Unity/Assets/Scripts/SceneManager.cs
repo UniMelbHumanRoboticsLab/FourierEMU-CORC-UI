@@ -63,8 +63,8 @@ public class SceneManager : MonoBehaviour
         Button StartSessionBt = GameObject.Find("StartSessionBt").GetComponent<Button>();
         StartSessionBt.onClick.AddListener(() => { StartSession(StartSessionBt); });
         
-        Button SetGoalBt = GameObject.Find("SetGoalBt").GetComponent<Button>();
-        SetGoalBt.onClick.AddListener(() => { flags.SetGoal=true; });
+        /*Button SetGoalBt = GameObject.Find("SetGoalBt").GetComponent<Button>();
+        SetGoalBt.onClick.AddListener(() => { flags.SetGoal=true; });*/
         
         Button QuitBt = GameObject.Find("QuitBt").GetComponent<Button>();
         QuitBt.onClick.AddListener(() => { Quit(); });
@@ -153,12 +153,12 @@ public class SceneManager : MonoBehaviour
             Status.text += Robot.State["Contribution"][0].ToString("0.0");
             Status.text += "\n";
             
-            //Update UI flags
+            /*Update UI flags
             if(GameObject.Find("NoRobot").GetComponent<Toggle>().isOn)
                 flags.NoRobot = true;
             else
                 flags.NoRobot = false;
-            flags.SetGoal = false; //reset to false if it has been set
+            flags.SetGoal = false; //reset to false if it has been set*/
             
             //Update session data: mvt counts, distance...
             updateState();
@@ -202,7 +202,7 @@ public class SceneManager : MonoBehaviour
             }
             int is_new_mvt = 0;
             //If crossing 98% while already crossed 50:
-            if( (last_p<=0.98 && (p>0.98 || p<0.1)) && mvt_progress_50percent) {
+            if( (last_p<=0.999 && (p>0.999 || p<0.1)) && mvt_progress_50percent) {
                 is_new_mvt = 1;
                 mvt_progress_50percent = false;
                 GameObject.Find("MvtSuccessSnd").GetComponent<AudioSource>().Play();
@@ -410,6 +410,9 @@ public class SceneManager : MonoBehaviour
             T_pauseSl.GetComponentsInChildren<TMPro.TextMeshProUGUI>()[1].text="0s";
             T_pauseSl.onValueChanged.AddListener(delegate { UpdatePtPauseTimeSlider(T_pauseSl.value, T_pauseSl); });
         }
+
+        //Play sound
+        GameObject.Find("ShortUpSnd").GetComponent<AudioSource>().Play();
     }
     
     void DelPt(Button bt)
@@ -451,8 +454,12 @@ public class SceneManager : MonoBehaviour
             GameObject.Find(vals_path+"T_pause_val").GetComponent<Slider>().value=0f;
         }
         
+
         //Update distance to previous point value
         StartCoroutine(UpdatePtsDistanceValues());
+
+        //Play sound
+        GameObject.Find("ShortDownSnd").GetComponent<AudioSource>().Play();
     }
     
     void updatePtsProgress(double progress)
@@ -559,12 +566,12 @@ public class SceneManager : MonoBehaviour
                     break;
                 //Mobilisation
                 case "OKJE":
-                    AddActivity("Mobilisation", -1, -1);
+                    AddActivity("Mobilisation", -1, MassSl.value);
                     GameObject.Find("GOJETg").GetComponent<Toggle>().isOn = true;
                     break;
                 //Path
                 case "OKPA":
-                    AddActivity("Assistive", AssistanceSl.value, -1);
+                    AddActivity("Assistive", AssistanceSl.value, MassSl.value);
                     GameObject.Find("GOPATg").GetComponent<Toggle>().isOn = true;
                     break;
                 //Reset
