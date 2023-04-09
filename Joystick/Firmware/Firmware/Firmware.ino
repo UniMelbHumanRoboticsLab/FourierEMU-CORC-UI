@@ -15,6 +15,8 @@ float progress=0;
 enum mode {Deweight, Mob, Assist, Connect, None};
 mode Mode=None;
 int button[2] = {0, 7};
+int btns_last_state[2] = {1, 1};
+int cnt = 0; //used for debounce
 
 void setup(void) {
   u8g2.begin();
@@ -130,10 +132,20 @@ void loop(void) {
 
 
   //Send button state if pressed
-  if(!digitalRead(button[0]) || !digitalRead(button[1])) {
+  int btn0=digitalRead(button[0]);
+  int btn1=digitalRead(button[1]);
+  if( ((!btn0 && btns_last_state[0]) || (!btn1 && btns_last_state[1])) && cnt>30 ) {
+    btns_last_state[0] = btn0;
+    btns_last_state[1] = btn1;
     Serial.print('B');
-    Serial.print(!digitalRead(button[0]));
-    Serial.println(!digitalRead(button[1]));
-    delay(100);//cheap debounce
+    Serial.print(!btn0);
+    Serial.println(!btn1);
+    cnt = 0;
   }
+  else {
+    btns_last_state[0] = btn0;
+    btns_last_state[1] = btn1;
+  }
+  cnt++;
+  delay(20);
 }

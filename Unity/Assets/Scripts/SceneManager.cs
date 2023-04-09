@@ -13,7 +13,7 @@ using Pendants;
 
 public class SceneManager : MonoBehaviour
 {
-    public CORCM3_FOURIER_SIMU Robot;
+    public CORCM3_FOURIER Robot;
     public MvtLogger Logger;
     public SimplePendant Pendant;
     
@@ -188,7 +188,6 @@ public class SceneManager : MonoBehaviour
         {
             Status.text += " Not Connected\n";
             enablePanel("ControlPanel", false);
-            updatePendant();//TODO: to remove
         }
     }
 
@@ -277,7 +276,7 @@ public class SceneManager : MonoBehaviour
             if(btns[0]) 
             {
                 Debug.Log("B0");
-                if(GameObject.Find("GOGJEg").GetComponent<Toggle>().isOn) 
+                if(GameObject.Find("GOJETg").GetComponent<Toggle>().isOn) 
                 {
                     //Nothing
                 }
@@ -289,9 +288,8 @@ public class SceneManager : MonoBehaviour
                 {
                     //Add pt: last one
                     GameObject pts_list = GameObject.Find("PtsLayout");
-                    int last_idx = pts_list.transform.childCount;
+                    int last_idx = pts_list.transform.childCount-1;
                     Button add_btn = GameObject.Find("PtsLayout/"+last_idx.ToString()+"/AddPtBt").GetComponent<Button>();
-                    Debug.Log("PtsLayout/"+last_idx.ToString()+"/AddPtBt");
                     AddPt(add_btn);
                 }
             }
@@ -299,7 +297,7 @@ public class SceneManager : MonoBehaviour
             if(btns[1])
             {
                 Debug.Log("B1");
-                if(GameObject.Find("GOGJEg").GetComponent<Toggle>().isOn) 
+                if(GameObject.Find("GOJETg").GetComponent<Toggle>().isOn) 
                 {
                     //Stop => Deweight
                     GoGrav(GameObject.Find("ControlPanel/MassSl").GetComponent<Slider>().value);
@@ -311,7 +309,21 @@ public class SceneManager : MonoBehaviour
                 }
                 else
                 {
-                    //Remove pt
+                    //Remove pt: last one filled in
+                    GameObject pts_list = GameObject.Find("PtsLayout");
+                    int last_idx = pts_list.transform.childCount-1;
+                    if(GameObject.Find("PtsLayout/"+(last_idx).ToString("0")+"/VertLayout/PtLayout/"+"Hidden/x_val").GetComponent<InputField>().text == "")
+                    {
+                        last_idx--;
+                        Button del_btn = GameObject.Find("PtsLayout/"+last_idx.ToString()+"/DelPtBt").GetComponent<Button>();
+                        DelPt(del_btn);
+                    }
+                    else
+                    {
+                        Button del_btn = GameObject.Find("PtsLayout/"+last_idx.ToString()+"/DelPtBt").GetComponent<Button>();
+                        DelPt(del_btn);
+                    }
+                    
 
                 }
             }
@@ -589,7 +601,7 @@ public class SceneManager : MonoBehaviour
             p.Add(double.Parse(inp.text));
             //T
             p.Add(GameObject.Find(pt_path+"T_val").GetComponent<Slider>().value);
-            //Pause T TODO
+            //Pause T
             p.Add(GameObject.Find(pt_path+"T_pause_val").GetComponent<Slider>().value);
         }
         
