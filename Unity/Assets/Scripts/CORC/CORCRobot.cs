@@ -171,7 +171,7 @@ namespace CORC
         /// <summary>
         /// Send a command (up to 4 characters) and associated double parameters (up to 30) to CORC server
         /// </summary>
-        public void SendCmd(string cmd, double[] parameters = null)
+        public virtual void SendCmd(string cmd, double[] parameters = null)
         {
             Client.SendCmd(cmd.ToCharArray(), parameters);
         }
@@ -179,7 +179,7 @@ namespace CORC
         /// <summary>
         /// Return cmd if one received (command text only, no params)
         /// </summary>
-        public string GetCmd()
+        public virtual string GetCmd()
         {
             if(Client.IsReceivedCmd()) {
                 return Client.GetReceivedCmd().cmd;

@@ -9,11 +9,13 @@ using System.IO;
 using CORC;
 using SessionsData;
 using MvtLogging;
+using Pendants;
 
 public class SceneManager : MonoBehaviour
 {
-    public CORCM3_FOURIER Robot;
+    public CORCM3_FOURIER_SIMU Robot;
     public MvtLogger Logger;
+    public SimplePendant Pendant;
     
     public GameObject Cursor, Arrow;
     
@@ -168,6 +170,9 @@ public class SceneManager : MonoBehaviour
             updatePtsProgress(Robot.State["MvtProgress"][0]);
             updateSessionPanel();
 
+            //Check and manage Pendant inputs (buttons)
+            updatePendant();
+
 
             //Map cursor position and force interaction vector to current robot values
             float scale = 1000;
@@ -183,6 +188,7 @@ public class SceneManager : MonoBehaviour
         {
             Status.text += " Not Connected\n";
             enablePanel("ControlPanel", false);
+            updatePendant();//TODO: to remove
         }
     }
 
@@ -258,6 +264,57 @@ public class SceneManager : MonoBehaviour
         {
             GameObject.Find("CurrentActivityTxt").GetComponentInChildren<TMPro.TextMeshProUGUI>().text = "";
             GameObject.Find("SessionTxt").GetComponentInChildren<TMPro.TextMeshProUGUI>().text = "Session:\t";
+        }
+    }
+
+    //Check Pendant input and act accordingly
+    void updatePendant()
+    {
+        bool[] btns=Pendant.ReadButtons();
+
+        if(GameObject.Find("ControlPanel").GetComponent<CanvasGroup>().interactable) 
+        {
+            if(btns[0]) 
+            {
+                Debug.Log("B0");
+                if(GameObject.Find("GOGJEg").GetComponent<Toggle>().isOn) 
+                {
+                    //Nothing
+                }
+                else if(GameObject.Find("GOPATg").GetComponent<Toggle>().isOn)
+                {
+                    //Nothing
+                }
+                else
+                {
+                    //Add pt: last one
+                    GameObject pts_list = GameObject.Find("PtsLayout");
+                    int last_idx = pts_list.transform.childCount;
+                    Button add_btn = GameObject.Find("PtsLayout/"+last_idx.ToString()+"/AddPtBt").GetComponent<Button>();
+                    Debug.Log("PtsLayout/"+last_idx.ToString()+"/AddPtBt");
+                    AddPt(add_btn);
+                }
+            }
+
+            if(btns[1])
+            {
+                Debug.Log("B1");
+                if(GameObject.Find("GOGJEg").GetComponent<Toggle>().isOn) 
+                {
+                    //Stop => Deweight
+                    GoGrav(GameObject.Find("ControlPanel/MassSl").GetComponent<Slider>().value);
+                }
+                else if(GameObject.Find("GOPATg").GetComponent<Toggle>().isOn)
+                {
+                    //Stop => Deweight
+                    GoGrav(GameObject.Find("ControlPanel/MassSl").GetComponent<Slider>().value);
+                }
+                else
+                {
+                    //Remove pt
+
+                }
+            }
         }
     }
     
@@ -487,6 +544,7 @@ public class SceneManager : MonoBehaviour
             else if (progress>idx) //partial mvt
             {
                 progress_sl.value = (float)(progress - (int)progress);
+                Pendant.SetProgress(progress_sl.value);
             }
             else
             {
@@ -558,21 +616,26 @@ public class SceneManager : MonoBehaviour
                 //UnLock
                 case "OKUN":
                     AddActivity("None", -1, MassSl.value);
+                    Pendant.SwitchMode(mode.Deweight);
                     break;
                 //Gravity
                 case "OKGR":
                     AddActivity("Deweighting", -1, MassSl.value);
                     GameObject.Find("GOGRTg").GetComponent<Toggle>().isOn = true;
+                    Pendant.SwitchMode(mode.Deweight);
                     break;
                 //Mobilisation
                 case "OKJE":
                     AddActivity("Mobilisation", -1, MassSl.value);
                     GameObject.Find("GOJETg").GetComponent<Toggle>().isOn = true;
+                    Pendant.SwitchMode(mode.Mob);
                     break;
                 //Path
                 case "OKPA":
                     AddActivity("Assistive", AssistanceSl.value, MassSl.value);
                     GameObject.Find("GOPATg").GetComponent<Toggle>().isOn = true;
+                    Pendant.SwitchMode(mode.Assist);
+                    Pendant.SetProgress(.0);
                     break;
                 //Reset
                 case "OKRE":
@@ -678,7 +741,14 @@ public class SceneManager : MonoBehaviour
 
     void Connect(Button bt, InputField ip)
     {
-        if (!Robot.IsInitialised())
+        //Connect Pendant
+        Pendant = new SimplePendant();
+        Pendant.Connect();
+        Pendant.SwitchMode(mode.None);
+        Pendant.ReadButtons();//Good to clear buffer
+
+        //Robot then sensors and logger
+        if(!Robot.IsInitialised())
         {
             Robot.Init(ip.text);
             if(Robot.IsInitialised())

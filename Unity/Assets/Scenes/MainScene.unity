@@ -1672,7 +1672,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7754a9ebafdb0dc4f8bc781ae208daf4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Robot: {fileID: 563305752}
+  Robot: {fileID: 0}
   Cursor: {fileID: 4235678}
   Arrow: {fileID: 1817829015}
 --- !u!4 &274698803
