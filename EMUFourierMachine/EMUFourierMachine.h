@@ -42,6 +42,9 @@ class EMUFourierMachine : public StateMachine {
     double MvtProgress = 0;     //!< Progress (status) along mvt
     double Contribution = 0;    //!< User contribution to mvt
     double MassComp = 0;        //!< Current mass compensation
+
+    void UpdateEnergy();
+    double Energy = 0;
 };
 
 #endif /*M3_SM_H*/

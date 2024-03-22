@@ -115,7 +115,7 @@ bool goToJerk(StateMachine & SM) {
     }
     else {
         if ( sm.robot()->keyboard->getKeyUC()=='J' ) {
-            //TODO TO REMOVE: test points
+            //Test points added automatically when keyboard interaction is used
             std::shared_ptr<M3MinJerkPosition> s = sm.state<M3MinJerkPosition>("MinJerkState");
             s->clearPts();
             s->addPt(-0.688, -0.376, -0.323, 2.0, .0);
@@ -166,7 +166,7 @@ bool goToPath(StateMachine & SM) {
     }
     else {
         if ( sm.robot()->keyboard->getKeyUC()=='P' ) {
-            //TODO TO REMOVE: test points
+            //Test points added automatically when keyboard interaction is used
             std::shared_ptr<M3MinJerkPosition> s = sm.state<M3MinJerkPosition>("PathState");
             s->clearPts();
             s->addPt(-0.688, -0.376, -0.323, 2.0, .0);
@@ -227,7 +227,7 @@ bool quit(StateMachine & SM) {
     return false;
 }
 
-//Fake transition (return true all the time) used to update the Path state parameter
+//Fake transition (return false all the time) used to update the Path state parameter
 bool updatePath(StateMachine & SM) {
     EMUFourierMachine & sm = static_cast<EMUFourierMachine &>(SM); //Cast to specific StateMachine type
 
@@ -253,7 +253,7 @@ bool updatePath(StateMachine & SM) {
     return false;
 }
 
-//Fake transition (return true all the time) used to update the mass parameter
+//Fake transition (return false all the time) used to update the mass parameter
 bool updateMass(StateMachine & SM) {
     EMUFourierMachine & sm = static_cast<EMUFourierMachine &>(SM); //Cast to specific StateMachine type
 
@@ -277,6 +277,20 @@ bool updateMass(StateMachine & SM) {
     }
 
     return false;
+}
+
+
+//Simple passivity observer updated every loop, updating Energy value
+void EMUFourierMachine::UpdateEnergy() {
+    if(robot()->isCalibrated()) {
+        Energy += robot()->getEndEffVelocity().dot(robot()->getInteractionForce())*state()->dt();
+        //Display energy
+        if(spdlog::get_level()<=spdlog::level::debug) {
+            if(state()->iterations()%50==1) {
+                printProgressCenter(Energy/100., "Energy:", "E="+to_string(Energy)+"\n");
+            }
+        }
+    }
 }
 
 
@@ -374,6 +388,7 @@ void EMUFourierMachine::end() {
  */
 void EMUFourierMachine::hwStateUpdate() {
     StateMachine::hwStateUpdate();
+    //UpdateEnergy();
     //Also send robot state over network
     UIserver->sendState();
     //Attempt to reconnect (if not already waiting for connection)

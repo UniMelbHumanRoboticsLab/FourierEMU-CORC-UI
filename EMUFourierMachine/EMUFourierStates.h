@@ -12,10 +12,36 @@
 
 #include "State.h"
 #include "RobotM3.h"
+#include "LogHelper.h"
 
 class EMUFourierMachine;
 
 
+/** @defgroup PrintingFunctions Convenience progress bar printing functions
+ *  @{
+ */
+//! Print a progress bar for a value from 0 to 1 and additional pre and post text
+void printProgress(double val, std::string pre_txt="", std::string post_txt="", int l=100 /*nb char long*/);
+//! Print a progress bar, centered at 0 for a value from -1 to 1 and additional pre and post text
+void printProgressCenter(double val, std::string pre_txt="", std::string post_txt="", int l=100 /*nb char long*/);
+/** @} */ // end of PrintingFunctions
+
+
+/** @defgroup GenericEMUFunctions Generic EMU control functions
+ *  @{
+ */
+//! Impedance force for given stiffness and damping matrices and target position and velocities
+VM3 impedance(Eigen::Matrix3d K, Eigen::Matrix3d D, VM3 X0, VM3 X, VM3 dX, VM3 dXd=VM3::Zero());
+//! Current status (0-1 parametrisation and expected position Xd and velocity dXd) for a given min
+//!jerk path between X0 and Xf and a given total time T and current time t
+double JerkIt(VM3 X0, VM3 Xf, double T, double t, VM3 &Xd, VM3 &dXd);
+/** @} */ // end of GenericEMUFunctions
+
+
+/**
+ * \brief EMU trajectory point (i.e. 3d point) with associated reaching time and stop (pause) time
+ *
+ */
 typedef struct M3TrajPt
 {
     M3TrajPt (double x, double y, double z, double tf, double tp=.0): X(VM3(x, y, z)), T(tf), Tpause(tp) {};
@@ -238,8 +264,10 @@ class M3MinJerkPosition: public M3PtToPt {
     void exitCode(void);
 
    private:
-    double k = 1800.;                //! Impedance proportional gain (spring)
-    double d = 3.;                   //! Impedance derivative gain (damper)
+    VM3 Xd, dXd, Fd;
+    double k = 2000.;                //! Impedance proportional gain (spring)
+    double d = 5.;                   //! Impedance derivative gain (damper)
+    LogHelper stateLogger;
 };
 
 

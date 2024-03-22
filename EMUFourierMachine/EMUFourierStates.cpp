@@ -3,11 +3,46 @@
 
 using namespace std;
 
-double timeval_to_sec(struct timespec *ts) {
-    return (double)(ts->tv_sec + ts->tv_nsec / 1000000000.0);
+
+//Print a progress bar for a value from 0 to 1 and additional pre and post text
+void printProgress(double val, std::string pre_txt, std::string post_txt, int l) {
+    val = fmin(fmax(val, 0.), 1.0);
+    std::cout << pre_txt << " |";
+    for(int i=0; i<round(val*l); i++)
+        std::cout << "=";
+    for(int i=0; i<round((1.-val)*l); i++)
+        std::cout << "-";
+    std::cout << "| (" << val*100 << "%)  ";
+    std::cout << post_txt;
+}
+//Print a progress bar, centered at 0 for a value from -1 to 1 and additional pre and post text
+void printProgressCenter(double val, std::string pre_txt, std::string post_txt, int l) {
+    val = fmin(fmax(val, -1.0), 1.0);
+    std::cout << pre_txt << " |";
+    if(val>=0) {
+        for(int i=0; i<round(l/2.); i++)
+            std::cout << "-";
+        for(int i=0; i<round(val*l/2.); i++)
+            std::cout << "=";
+        for(int i=0; i<round((1.-val)*l/2.); i++)
+            std::cout << "-";
+    }
+    if(val<0) {
+        val=-val;
+        for(int i=0; i<round((1.-val)*l/2.); i++)
+            std::cout << "-";
+        for(int i=0; i<round(val*l/2.); i++)
+            std::cout << "=";
+        for(int i=0; i<round(l/2.); i++)
+            std::cout << "-";
+    }
+    std::cout << "| (" << val*100 << "%)  ";
+    std::cout << post_txt;
 }
 
-VM3 impedance(Eigen::Matrix3d K, Eigen::Matrix3d D, VM3 X0, VM3 X, VM3 dX, VM3 dXd=VM3::Zero()) {
+
+
+VM3 impedance(Eigen::Matrix3d K, Eigen::Matrix3d D, VM3 X0, VM3 X, VM3 dX, VM3 dXd) {
     return K*(X0-X) + D*(dXd-dX);
 }
 
@@ -21,6 +56,8 @@ double JerkIt(VM3 X0, VM3 Xf, double T, double t, VM3 &Xd, VM3 &dXd) {
     dXd = (X0-Xf) * (4.*15.*tn4-5.*6.*tn5-10.*3*tn3)/t;
     return tn;
 }
+
+
 
 
 void M3CalibState::entryCode(void) {
@@ -295,13 +332,7 @@ void M3PathState::duringCode(void) {
     //Display progression
     if(spdlog::get_level()<=spdlog::level::debug) {
         if(iterations()%100==1) {
-            std::cout << "Path progress: (Point "<< trajPtIdx << ") |";
-            for(int i=0; i<round(status*50.); i++)
-                std::cout << "=";
-            for(int i=0; i<round((1-status)*50.); i++)
-                std::cout << "-";
-
-            std::cout << "| (" << status*100 << "%)";
+            printProgress(status, "Path progress: (Point " + to_string(trajPtIdx) + ")", "k="+to_string(k)+"\td="+to_string(d)+"\n");
             robot->printStatus();
         }
     }
@@ -336,6 +367,20 @@ void M3MinJerkPosition::entryCode(void) {
     sm->Contribution = .0;
     sm->MvtProgress = .0;
 
+    if(spdlog::get_level()<=spdlog::level::debug) {
+        stateLogger.initLogger("PositionControlLog", "logs/EMUPosCtrl.csv", LogFormat::CSV, true);
+        stateLogger.add(running(), "%Time (s)");
+        stateLogger.add(robot->getEndEffPosition(), "X");
+        stateLogger.add(robot->getEndEffVelocity(), "dX");
+        stateLogger.add(robot->getInteractionForce(), "F");
+        stateLogger.add(k, "K");
+        stateLogger.add(d, "D");
+        stateLogger.add(Xd, "Xd");
+        stateLogger.add(dXd, "dXd");
+        stateLogger.add(Fd, "Fd");
+        stateLogger.startLogger();
+    }
+
     //Initialise to first target point
     trajPtIdx=0;
     startTime=running();
@@ -356,16 +401,15 @@ void M3MinJerkPosition::entryCode(void) {
 }
 void M3MinJerkPosition::duringCode(void) {
 
-    VM3 Xd, dXd;
     //Compute current desired interpolated point
     status=JerkIt(Xi, Xf, T, running()-startTime, Xd, dXd);
 
     //Impedance on current point
     Eigen::Matrix3d K = k*Eigen::Matrix3d::Identity();
     Eigen::Matrix3d D = d*Eigen::Matrix3d::Identity();
-    VM3 Fd = impedance(K, D, Xd, robot->getEndEffPosition(), robot->getEndEffVelocity(), dXd);
+    Fd = impedance(K, D, Xd, robot->getEndEffPosition(), robot->getEndEffVelocity(), dXd);
 
-    //Add mass compensation feed-forward
+    //Add arm mass compensation feed-forward
     Fd += VM3(0,0,sm->MassComp*9.8);
 
     //Apply force
@@ -405,40 +449,21 @@ void M3MinJerkPosition::duringCode(void) {
         }
     }
 
-    /*//Have we reached a point?
-    if(status>=1. && !stop) {
-        //Go to next point
-        trajPtIdx++;
-        if(trajPtIdx>=trajPts.size()){
-            trajPtIdx=0;
-        }
-        //From where we were
-        Xi=Xf;
-        //to next pt (if it exists)
-        if(trajPts.size()>0) {
-            Xf=trajPts[trajPtIdx].X;
-            T=trajPts[trajPtIdx].T;
-        }
-        else {
-            Xf=robot->getEndEffPosition();
-            T=0;
-        }
-        startTime=running();
-    }*/
+    //Display
     if(!paused) {
         sm->MvtProgress = trajPtIdx+status;
 
         //Display progression
-        if(spdlog::get_level()<=spdlog::level::debug) {
-            if(iterations()%100==1) {
-                std::cout << "Progress (Point "<< trajPtIdx << ") |";
-                for(int i=0; i<round(status*50.); i++)
-                    std::cout << "=";
-                for(int i=0; i<round((1-status)*50.); i++)
-                    std::cout << "-";
-
-                std::cout << "| (" << status*100 << "%)  ";
-                robot->printStatus();
+        if(iterations()%50==1) {
+            if(spdlog::get_level()<=spdlog::level::debug) {
+                //printProgress(status, "Progress (Point " + to_string(trajPtIdx) + ")", "k="+to_string(k)+"\td="+to_string(d)+"\n");
+                //robot->printStatus();
+                double v = robot->getEndEffVelocity().norm();
+                double v_f = robot->getEndEffVelocityFiltered().norm();
+                double a_f = robot->getEndEffAcceleration().norm();
+                //printProgress(v, "Speed\t\t", "v="+to_string(v)+"\n");
+                printProgress(v_f, "Filt Speed\t", "vFilt="+to_string(v_f)+"\n");
+                printProgress(a_f, "Filt Acc\t", "aFilt="+to_string(v_f)+"\n");
             }
         }
     }
@@ -446,24 +471,32 @@ void M3MinJerkPosition::duringCode(void) {
         sm->MvtProgress = trajPtIdx+0.999;
     }
 
-    /*For gains tuning only
-    if(robot->keyboard->getS()) {
-        k -=20;
-        std::cout << "k: " << k << std::endl;
+    if(stateLogger.isInitialised()) {
+        stateLogger.recordLogData();
     }
-    if(robot->keyboard->getW()) {
-        k +=20;
-        std::cout << "k: " << k << std::endl;
+
+    if(spdlog::get_level()<=spdlog::level::debug) {
+        //For gains tuning only
+        if(robot->keyboard->getKeyUC()=='S') {
+            k -=20;
+            std::cout << "k: " << k << std::endl;
+        }
+        if(robot->keyboard->getKeyUC()=='W') {
+            k +=20;
+            std::cout << "k: " << k << std::endl;
+        }
+        if(robot->keyboard->getKeyUC()=='Z') {
+            d -=0.1;
+            std::cout << "d: " << d << std::endl;
+        }
+        if(robot->keyboard->getKeyUC()=='A') {
+            d +=0.1;
+            std::cout << "d: " << d << std::endl;
+        }
     }
-    if(robot->keyboard->getKeyUC()=='D') {
-        d -=0.5;
-        std::cout << "d: " << d << std::endl;
-    }
-    if(robot->keyboard->getKeyUC()=='E') {
-        d +=0.5;
-        std::cout << "d: " << d << std::endl;
-    }*/
 }
 void M3MinJerkPosition::exitCode(void) {
     robot->setEndEffForceWithCompensation(VM3::Zero());
+    if(stateLogger.isInitialised())
+        stateLogger.endLog();
 }
