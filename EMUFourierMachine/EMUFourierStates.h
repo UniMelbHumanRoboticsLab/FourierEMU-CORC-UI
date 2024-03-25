@@ -21,9 +21,9 @@ class EMUFourierMachine;
  *  @{
  */
 //! Print a progress bar for a value from 0 to 1 and additional pre and post text
-void printProgress(double val, std::string pre_txt="", std::string post_txt="", int l=100 /*nb char long*/);
+void printProgress(double val, std::string pre_txt="", std::string post_txt="", int l=80 /*nb char long*/);
 //! Print a progress bar, centered at 0 for a value from -1 to 1 and additional pre and post text
-void printProgressCenter(double val, std::string pre_txt="", std::string post_txt="", int l=100 /*nb char long*/);
+void printProgressCenter(double val, std::string pre_txt="", std::string post_txt="", int l=80 /*nb char long*/);
 /** @} */ // end of PrintingFunctions
 
 
@@ -62,26 +62,24 @@ class EMUFourierState : public State {
     EMUFourierState(RobotM3* M3, EMUFourierMachine *sm_, const char *name = NULL): State(name), robot(M3), sm(sm_){spdlog::debug("Created EMUFourierState {}", name);};
    private:
     void entry(void) final {
-        /*std::cout
-        << "==================================" << std::endl
-        << " STARTING  " << getName() << std::endl
-        << "----------------------------------" << std::endl
-        << std::endl;*/
-
         //Actual state entry
         entryCode();
     };
     void during(void) final {
         //Actual state during
         duringCode();
+
+        //Manage state logger if used
+        if(stateLogger.isInitialised()) {
+            stateLogger.recordLogData();
+        }
+
     };
     void exit(void) final {
         exitCode();
-        /*std::cout
-        << "----------------------------------" << std::endl
-        << "EXIT "<< getName() << std::endl
-        << "==================================" << std::endl
-        << std::endl;*/
+
+        if(stateLogger.isInitialised())
+            stateLogger.endLog();
     };
 
    public:
@@ -91,6 +89,7 @@ class EMUFourierState : public State {
 
    protected:
     EMUFourierMachine *sm;
+    LogHelper stateLogger;
 };
 
 
@@ -172,6 +171,28 @@ class M3MassCompensation : public EMUFourierState {
      double mass = 0;                       //!< Desired mass to apply: might differ from applied_mass during transition (i.e. setMass)
      double applied_mass = 0;               //!< Currently appied mass
      double change_mass_rate = 2.;          //!< Rate at which mass will increase/decrease during change mass transition (in kg/s)
+};
+
+
+class M3AdvMassCompensation : public EMUFourierState {
+
+   public:
+    M3AdvMassCompensation(RobotM3 * M3, EMUFourierMachine *sm, const char *name = "M3 Advanced Mass Compensation"):EMUFourierState(M3, sm, name){};
+
+    void entryCode(void);
+    void duringCode(void);
+    void exitCode(void);
+
+    void setMass(double m) {mass=m; std::cout << "Mass: " << mass << std::endl;}
+
+   private:
+     const double transition_t = 1.;        //!< Time to apply progressive transition (no friction comp)
+     const double mass_limit = 10;          //!< Maximum applicable mass (+ and -)
+     double mass = 0;                       //!< Desired mass to apply: might differ from applied_mass during transition (i.e. setMass)
+     double cstt_mass = 1.0;
+     double thresh = 0.1;
+     double applied_mass = 0;               //!< Currently appied mass
+     double change_mass_rate = 4.;          //!< Rate at which mass will increase/decrease during change mass transition (in kg/s)
 };
 
 
@@ -267,7 +288,6 @@ class M3MinJerkPosition: public M3PtToPt {
     VM3 Xd, dXd, Fd;
     double k = 2000.;                //! Impedance proportional gain (spring)
     double d = 5.;                   //! Impedance derivative gain (damper)
-    LogHelper stateLogger;
 };
 
 

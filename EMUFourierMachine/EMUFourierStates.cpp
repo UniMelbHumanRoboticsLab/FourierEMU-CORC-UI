@@ -12,8 +12,11 @@ void printProgress(double val, std::string pre_txt, std::string post_txt, int l)
         std::cout << "=";
     for(int i=0; i<round((1.-val)*l); i++)
         std::cout << "-";
-    std::cout << "| (" << val*100 << "%)  ";
-    std::cout << post_txt;
+    std::cout << "| ";
+    if(post_txt.empty())
+        std::cout << "(" << val*100 << "%)  ";
+    else
+        std::cout << post_txt;
 }
 //Print a progress bar, centered at 0 for a value from -1 to 1 and additional pre and post text
 void printProgressCenter(double val, std::string pre_txt, std::string post_txt, int l) {
@@ -36,8 +39,11 @@ void printProgressCenter(double val, std::string pre_txt, std::string post_txt, 
         for(int i=0; i<round(l/2.); i++)
             std::cout << "-";
     }
-    std::cout << "| (" << val*100 << "%)  ";
-    std::cout << post_txt;
+    std::cout << "| ";
+    if(post_txt.empty())
+        std::cout << "(" << val*100 << "%)  ";
+    else
+        std::cout << post_txt;
 }
 
 
@@ -175,6 +181,18 @@ void M3MassCompensation::entryCode(void) {
     sm->Command = 2;
     sm->Contribution = .0;
     sm->MvtProgress = .0;
+
+    if(spdlog::get_level()<=spdlog::level::debug) {
+        stateLogger.initLogger("DeweightControlLog", "logs/EMUDeweightCtrl.csv", LogFormat::CSV, true);
+        stateLogger.add(running(), "%Time (s)");
+        stateLogger.add(robot->getEndEffPosition(), "X");
+        stateLogger.add(robot->getEndEffVelocity(), "dX");
+        stateLogger.add(robot->getInteractionForce(), "F");
+        stateLogger.add(robot->getEndEffVelocityFiltered(), "dXfilt");
+        stateLogger.add(robot->getEndEffAcceleration(), "ddXfilt");
+        stateLogger.startLogger();
+    }
+
     std::cout << "Press S to decrease mass (-100g), W to increase (+100g)." << std::endl;
 }
 void M3MassCompensation::duringCode(void) {
@@ -211,10 +229,126 @@ void M3MassCompensation::duringCode(void) {
         robot->printJointStatus();
         std::cout << "Mass: " << mass << std::endl;
     }
+
+    if(iterations()%50==1) {
+        if(spdlog::get_level()<=spdlog::level::debug) {
+            double v = robot->getEndEffVelocity().norm();
+            printProgress(v, "Speed\t", "vFilt="+to_string(v)+"\n");
+        }
+    }
+
 }
 void M3MassCompensation::exitCode(void) {
     robot->setEndEffForceWithCompensation(VM3(0,0,sm->MassComp*9.8), false);
 }
+
+
+
+void M3AdvMassCompensation::entryCode(void) {
+    //robot->initTorqueControl();
+    robot->setEndEffForceWithCompensation(VM3(0,0,sm->MassComp*9.8), false);
+    sm->Command = 20;
+    sm->Contribution = .0;
+    sm->MvtProgress = .0;
+
+    if(spdlog::get_level()<=spdlog::level::debug) {
+        stateLogger.initLogger("DeweightControlLog", "logs/EMUDeweightCtrl.csv", LogFormat::CSV, true);
+        stateLogger.add(running(), "%Time (s)");
+        stateLogger.add(robot->getEndEffPosition(), "X");
+        stateLogger.add(robot->getEndEffVelocity(), "dX");
+        stateLogger.add(robot->getInteractionForce(), "F");
+        stateLogger.add(robot->getEndEffVelocityFiltered(), "dXfilt");
+        stateLogger.add(robot->getEndEffAcceleration(), "ddXfilt");
+        stateLogger.startLogger();
+    }
+
+    std::cout << "Press S to decrease mass (-100g), W to increase (+100g)." << std::endl;
+}
+void M3AdvMassCompensation::duringCode(void) {
+
+    //Bound mass to +-5kg
+    if(mass>mass_limit) {
+        mass = mass_limit;
+    }
+    if(mass<-mass_limit) {
+        mass = -mass_limit;
+    }
+
+    //Calculate effective applied mass based on possible transition (change mass rate)
+    sm->MassComp += sign(mass - sm->MassComp)*change_mass_rate*dt();
+
+    //If after transitioning damping time
+    if(running()>transition_t) {
+        //Apply corresponding deweighting force
+        robot->setEndEffForceWithCompensation(VM3(0,0,sm->MassComp*9.8), true);
+    }
+    else {
+        //Apply corresponding deweighting force w/o friction comp
+        robot->setEndEffForceWithCompensation(VM3(0,0,sm->MassComp*9.8), false);
+    }
+
+    //Mass controllable through keyboard inputs
+    if(robot->keyboard->getS()) {
+        mass -=0.5;robot->printStatus();
+        robot->printJointStatus();
+        std::cout << "Mass: " << cstt_mass << std::endl;
+    }
+    if(robot->keyboard->getW()) {
+        mass +=0.5;robot->printStatus();
+        robot->printJointStatus();
+        std::cout << "Mass: " << cstt_mass << std::endl;
+    }
+
+    if(robot->keyboard->getKeyUC()=='Z') {
+        thresh -=0.05;
+        std::cout << "thresh: " << thresh << std::endl;
+    }
+    if(robot->keyboard->getKeyUC()=='A') {
+        thresh +=0.05;
+        std::cout << "thresh: " << thresh << std::endl;
+    }
+
+    if(robot->keyboard->getKeyUC()=='B') {
+        change_mass_rate -=0.5;
+        std::cout << "rate: " << change_mass_rate << std::endl;
+    }
+    if(robot->keyboard->getKeyUC()=='G') {
+        change_mass_rate +=0.5;
+        std::cout << "rate: " << change_mass_rate << std::endl;
+    }
+
+
+    double Vz = robot->getEndEffVelocity()[2];
+    double Fz = robot->getInteractionForce()[2];
+    if(Vz<-thresh){
+        mass = 0;
+    }
+    else {
+        mass = cstt_mass;
+    }
+
+
+    if(iterations()%50==1) {
+        if(spdlog::get_level()<=spdlog::level::debug) {
+            //printProgressCenter(Vz, "Speed Z\t\t", "Vz="+to_string(Vz)+"\n");
+            //printProgressCenter(Fz/20., "Force Z\t\t", "Fz="+to_string(Fz)+"\n");
+            if(Vz<-thresh){
+                printProgressCenter(-0.5, "", "\t", 40);
+            }
+            else {
+                printProgressCenter(0.5, "", "\t", 40);
+            }
+            printProgress(sm->MassComp/2, "Mass:", to_string(sm->MassComp)+"kg\n", 50);
+        }
+    }
+
+}
+void M3AdvMassCompensation::exitCode(void) {
+    robot->setEndEffForceWithCompensation(VM3(0,0,sm->MassComp*9.8), false);
+}
+
+
+
 
 
 void M3PathState::entryCode(void) {
@@ -456,23 +590,13 @@ void M3MinJerkPosition::duringCode(void) {
         //Display progression
         if(iterations()%50==1) {
             if(spdlog::get_level()<=spdlog::level::debug) {
-                //printProgress(status, "Progress (Point " + to_string(trajPtIdx) + ")", "k="+to_string(k)+"\td="+to_string(d)+"\n");
-                //robot->printStatus();
-                double v = robot->getEndEffVelocity().norm();
-                double v_f = robot->getEndEffVelocityFiltered().norm();
-                double a_f = robot->getEndEffAcceleration().norm();
-                //printProgress(v, "Speed\t\t", "v="+to_string(v)+"\n");
-                printProgress(v_f, "Filt Speed\t", "vFilt="+to_string(v_f)+"\n");
-                printProgress(a_f, "Filt Acc\t", "aFilt="+to_string(v_f)+"\n");
+                printProgress(status, "Progress (Point " + to_string(trajPtIdx) + ")", "k="+to_string(k)+"\td="+to_string(d)+"\n");
+                robot->printStatus();
             }
         }
     }
     else {
         sm->MvtProgress = trajPtIdx+0.999;
-    }
-
-    if(stateLogger.isInitialised()) {
-        stateLogger.recordLogData();
     }
 
     if(spdlog::get_level()<=spdlog::level::debug) {
@@ -497,6 +621,4 @@ void M3MinJerkPosition::duringCode(void) {
 }
 void M3MinJerkPosition::exitCode(void) {
     robot->setEndEffForceWithCompensation(VM3::Zero());
-    if(stateLogger.isInitialised())
-        stateLogger.endLog();
 }

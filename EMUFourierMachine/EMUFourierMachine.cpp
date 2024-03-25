@@ -303,7 +303,8 @@ EMUFourierMachine::EMUFourierMachine() {
     addState("DoNothingState", std::make_shared<M3NothingState>(robot(), this));
     addState("ResetState", std::make_shared<M3NothingState>(robot(), this));
     addState("CalibState", std::make_shared<M3CalibState>(robot(), this));
-    addState("StandbyState", std::make_shared<M3MassCompensation>(robot(), this));
+    //addState("StandbyState", std::make_shared<M3MassCompensation>(robot(), this));
+    addState("StandbyState", std::make_shared<M3AdvMassCompensation>(robot(), this));
     addState("MinJerkState", std::make_shared<M3MinJerkPosition>(robot(), this));
     addState("PathState", std::make_shared<M3PathState>(robot(), this));
     addState("LockState", std::make_shared<M3LockState>(robot(), this));
