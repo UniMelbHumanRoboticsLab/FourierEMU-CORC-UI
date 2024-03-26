@@ -1,9 +1,9 @@
 /**
- * \file M3DemoState.h
+ * \file EMUDeweighting.h
  * \author Vincent Crocher
- * \date 2022-10-06
+ * \date 2024-03-26
  *
- * \copyright Copyright (c) 2022
+ * \copyright Copyright (c) 2024
  *
  */
 
@@ -14,7 +14,7 @@
 #include "RobotM3.h"
 #include "LogHelper.h"
 
-class EMUFourierMachine;
+class EMUDeweighting;
 
 
 /** @defgroup PrintingFunctions Convenience progress bar printing functions
@@ -59,7 +59,7 @@ class EMUFourierState : public State {
    protected:
     RobotM3 * robot;                               //!< Pointer to state machines robot object
 
-    EMUFourierState(RobotM3* M3, EMUFourierMachine *sm_, const char *name = NULL): State(name), robot(M3), sm(sm_){spdlog::debug("Created EMUFourierState {}", name);};
+    EMUFourierState(RobotM3* M3, EMUDeweighting *sm_, const char *name = NULL): State(name), robot(M3), sm(sm_){spdlog::debug("Created EMUFourierState {}", name);};
    private:
     void entry(void) final {
         //Actual state entry
@@ -88,7 +88,7 @@ class EMUFourierState : public State {
     virtual void exitCode(){};
 
    protected:
-    EMUFourierMachine *sm;
+    EMUDeweighting *sm;
     LogHelper stateLogger;
 };
 
@@ -100,7 +100,7 @@ class EMUFourierState : public State {
 class M3NothingState : public EMUFourierState {
 
    public:
-    M3NothingState(RobotM3 * M3, EMUFourierMachine *sm, const char *name = "M3 Do Nothing"):EMUFourierState(M3, sm, name){};
+    M3NothingState(RobotM3 * M3, EMUDeweighting *sm, const char *name = "M3 Do Nothing"):EMUFourierState(M3, sm, name){};
 
     void entryCode(void) { robot->initTorqueControl(); robot->setJointTorque(VM3(0,0,0)); }
     void duringCode(void) { robot->setJointTorque(VM3(0,0,0)); }
@@ -114,7 +114,7 @@ class M3NothingState : public EMUFourierState {
 class M3CalibState : public EMUFourierState {
 
    public:
-    M3CalibState(RobotM3 * M3, EMUFourierMachine *sm, const char *name = "M3 Calib State"):EMUFourierState(M3, sm, name){};
+    M3CalibState(RobotM3 * M3, EMUDeweighting *sm, const char *name = "M3 Calib State"):EMUFourierState(M3, sm, name){};
 
     void entryCode(void);
     void duringCode(void);
@@ -137,7 +137,7 @@ class M3CalibState : public EMUFourierState {
 class M3LockState : public EMUFourierState {
 
    public:
-    M3LockState(RobotM3 * M3, EMUFourierMachine *sm, const char *name = "M3 Lock"):EMUFourierState(M3, sm, name){};
+    M3LockState(RobotM3 * M3, EMUDeweighting *sm, const char *name = "M3 Lock"):EMUFourierState(M3, sm, name){};
 
     void entryCode(void);
     void duringCode(void);
@@ -157,7 +157,7 @@ class M3LockState : public EMUFourierState {
 class M3MassCompensation : public EMUFourierState {
 
    public:
-    M3MassCompensation(RobotM3 * M3, EMUFourierMachine *sm, const char *name = "M3 Mass Compensation"):EMUFourierState(M3, sm, name){};
+    M3MassCompensation(RobotM3 * M3, EMUDeweighting *sm, const char *name = "M3 Mass Compensation"):EMUFourierState(M3, sm, name){};
 
     void entryCode(void);
     void duringCode(void);
@@ -174,6 +174,28 @@ class M3MassCompensation : public EMUFourierState {
 };
 
 
+class M3AdvMassCompensation : public EMUFourierState {
+
+   public:
+    M3AdvMassCompensation(RobotM3 * M3, EMUDeweighting *sm, const char *name = "M3 Advanced Mass Compensation"):EMUFourierState(M3, sm, name){};
+
+    void entryCode(void);
+    void duringCode(void);
+    void exitCode(void);
+
+    void setMass(double m) {mass=m; std::cout << "Mass: " << mass << std::endl;}
+
+   private:
+     const double transition_t = 1.;        //!< Time to apply progressive transition (no friction comp)
+     const double mass_limit = 10;          //!< Maximum applicable mass (+ and -)
+     double mass = 0;                       //!< Desired mass to apply: might differ from applied_mass during transition (i.e. setMass)
+     double cstt_mass = 1.0;
+     double thresh = 0.1;
+     double applied_mass = 0;               //!< Currently appied mass
+     double change_mass_rate = 4.;          //!< Rate at which mass will increase/decrease during change mass transition (in kg/s)
+};
+
+
 /**
  * \brief Generic pt to pt state: to be derived.
  *
@@ -181,7 +203,7 @@ class M3MassCompensation : public EMUFourierState {
 class M3PtToPt: public EMUFourierState {
 
    public:
-    M3PtToPt(RobotM3 * M3, EMUFourierMachine *sm, const char *name = "M3 Pt to Pt"):EMUFourierState(M3, sm, name) { };
+    M3PtToPt(RobotM3 * M3, EMUDeweighting *sm, const char *name = "M3 Pt to Pt"):EMUFourierState(M3, sm, name) { };
 
     virtual void entryCode(void) = 0;
     virtual void duringCode(void) = 0;
@@ -231,7 +253,7 @@ class M3PtToPt: public EMUFourierState {
 class M3PathState : public M3PtToPt {
 
    public:
-    M3PathState(RobotM3 * M3, EMUFourierMachine *sm, const char *name = "M3 Path State"):M3PtToPt(M3, sm, name){};
+    M3PathState(RobotM3 * M3, EMUDeweighting *sm, const char *name = "M3 Path State"):M3PtToPt(M3, sm, name){};
 
     void entryCode(void);
     void duringCode(void);
@@ -256,7 +278,7 @@ class M3PathState : public M3PtToPt {
 class M3MinJerkPosition: public M3PtToPt {
 
    public:
-    M3MinJerkPosition(RobotM3 * M3, EMUFourierMachine *sm, const char *name = "M3 Minimum Jerk Position"):M3PtToPt(M3, sm, name){};
+    M3MinJerkPosition(RobotM3 * M3, EMUDeweighting *sm, const char *name = "M3 Minimum Jerk Position"):M3PtToPt(M3, sm, name){};
 
     void entryCode(void);
     void duringCode(void);

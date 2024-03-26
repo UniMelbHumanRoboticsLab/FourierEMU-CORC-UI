@@ -1,9 +1,9 @@
-#include "EMUFourierMachine.h"
+#include "EMUDeweighting.h"
 
 using namespace std;
 
 bool goToCalib(StateMachine & SM) {
-    EMUFourierMachine & sm = static_cast<EMUFourierMachine &>(SM); //Cast to specific StateMachine type
+    EMUDeweighting & sm = static_cast<EMUDeweighting &>(SM); //Cast to specific StateMachine type
 
     //keyboard or joystick press
     if ( sm.robot()->keyboard->getKeyUC()=='C' )
@@ -25,7 +25,7 @@ bool endCalib(StateMachine & sm) {
 }
 
 bool goToLock(StateMachine & SM) {
-    EMUFourierMachine & sm = static_cast<EMUFourierMachine &>(SM); //Cast to specific StateMachine type
+    EMUDeweighting & sm = static_cast<EMUDeweighting &>(SM); //Cast to specific StateMachine type
 
     //keyboard press
     if ( sm.robot()->joystick->isButtonTransition(3)>0 || sm.robot()->keyboard->getKeyUC()=='L' )
@@ -43,7 +43,7 @@ bool goToLock(StateMachine & SM) {
 }
 
 bool goToUnlock(StateMachine & SM) {
-    EMUFourierMachine & sm = static_cast<EMUFourierMachine &>(SM); //Cast to specific StateMachine type
+    EMUDeweighting & sm = static_cast<EMUDeweighting &>(SM); //Cast to specific StateMachine type
 
     //keyboard press
     if ( sm.robot()->keyboard->getKeyUC()=='U' )
@@ -61,7 +61,7 @@ bool goToUnlock(StateMachine & SM) {
 }
 
 bool goToReset(StateMachine & SM) {
-    EMUFourierMachine & sm = static_cast<EMUFourierMachine &>(SM); //Cast to specific StateMachine type
+    EMUDeweighting & sm = static_cast<EMUDeweighting &>(SM); //Cast to specific StateMachine type
 
     //keyboard press
     if ( sm.robot()->keyboard->getKeyUC()=='R' )
@@ -79,7 +79,7 @@ bool goToReset(StateMachine & SM) {
 }
 
 bool goToJerk(StateMachine & SM) {
-    EMUFourierMachine & sm = static_cast<EMUFourierMachine &>(SM); //Cast to specific StateMachine type
+    EMUDeweighting & sm = static_cast<EMUDeweighting &>(SM); //Cast to specific StateMachine type
 
     std::vector<double> params;
     if ( sm.UIserver->isCmd("GOJE", params) ) {
@@ -130,7 +130,7 @@ bool goToJerk(StateMachine & SM) {
 }
 
 bool goToPath(StateMachine & SM) {
-    EMUFourierMachine & sm = static_cast<EMUFourierMachine &>(SM); //Cast to specific StateMachine type
+    EMUDeweighting & sm = static_cast<EMUDeweighting &>(SM); //Cast to specific StateMachine type
 
     std::vector<double> params;
     if ( sm.UIserver->isCmd("GOPA", params) ) {
@@ -180,7 +180,7 @@ bool goToPath(StateMachine & SM) {
 }
 
 bool goToGravity(StateMachine & SM) {
-    EMUFourierMachine & sm = static_cast<EMUFourierMachine &>(SM); //Cast to specific StateMachine type
+    EMUDeweighting & sm = static_cast<EMUDeweighting &>(SM); //Cast to specific StateMachine type
 
     //TODO: differentiate (for logging) from standby state
     std::vector<double> params;
@@ -208,7 +208,7 @@ bool goToGravity(StateMachine & SM) {
 
 //Exit CORC app properly
 bool quit(StateMachine & SM) {
-    EMUFourierMachine & sm = static_cast<EMUFourierMachine &>(SM); //Cast to specific StateMachine type
+    EMUDeweighting & sm = static_cast<EMUDeweighting &>(SM); //Cast to specific StateMachine type
 
     //keyboard press
     if ( sm.robot()->keyboard->getKeyUC()=='Q' ) {
@@ -229,7 +229,7 @@ bool quit(StateMachine & SM) {
 
 //Fake transition (return false all the time) used to update the Path state parameter
 bool updatePath(StateMachine & SM) {
-    EMUFourierMachine & sm = static_cast<EMUFourierMachine &>(SM); //Cast to specific StateMachine type
+    EMUDeweighting & sm = static_cast<EMUDeweighting &>(SM); //Cast to specific StateMachine type
 
     std::vector<double> params;
 
@@ -255,7 +255,7 @@ bool updatePath(StateMachine & SM) {
 
 //Fake transition (return false all the time) used to update the mass parameter
 bool updateMass(StateMachine & SM) {
-    EMUFourierMachine & sm = static_cast<EMUFourierMachine &>(SM); //Cast to specific StateMachine type
+    EMUDeweighting & sm = static_cast<EMUDeweighting &>(SM); //Cast to specific StateMachine type
 
     std::vector<double> params;
 
@@ -281,7 +281,7 @@ bool updateMass(StateMachine & SM) {
 
 
 //Simple passivity observer updated every loop, updating Energy value
-void EMUFourierMachine::UpdateEnergy() {
+void EMUDeweighting::UpdateEnergy() {
     if(robot()->isCalibrated()) {
         Energy += robot()->getEndEffVelocity().dot(robot()->getInteractionForce())*state()->dt();
         //Display energy
@@ -294,7 +294,7 @@ void EMUFourierMachine::UpdateEnergy() {
 }
 
 
-EMUFourierMachine::EMUFourierMachine() {
+EMUDeweighting::EMUDeweighting() {
     //Create a Robot and set it to generic state machine
     setRobot(std::make_unique<RobotM3>("EMU_FOURIER", "M3_params.yaml"));
     //setRobot(std::make_unique<RobotM3>("EMU_MELB", "M3_params.yaml"));
@@ -303,7 +303,8 @@ EMUFourierMachine::EMUFourierMachine() {
     addState("DoNothingState", std::make_shared<M3NothingState>(robot(), this));
     addState("ResetState", std::make_shared<M3NothingState>(robot(), this));
     addState("CalibState", std::make_shared<M3CalibState>(robot(), this));
-    addState("StandbyState", std::make_shared<M3MassCompensation>(robot(), this));
+    //addState("StandbyState", std::make_shared<M3MassCompensation>(robot(), this));
+    addState("StandbyState", std::make_shared<M3AdvMassCompensation>(robot(), this));
     addState("MinJerkState", std::make_shared<M3MinJerkPosition>(robot(), this));
     addState("PathState", std::make_shared<M3PathState>(robot(), this));
     addState("LockState", std::make_shared<M3LockState>(robot(), this));
@@ -340,7 +341,7 @@ EMUFourierMachine::EMUFourierMachine() {
     addTransitionFromAny(&quit, "StandbyState");
     addTransition("StandbyState", &quit, "StandbyState"); //From any does not apply to self (destination state)
 }
-EMUFourierMachine::~EMUFourierMachine() {
+EMUDeweighting::~EMUDeweighting() {
 }
 
 /**
@@ -348,10 +349,10 @@ EMUFourierMachine::~EMUFourierMachine() {
  * for example initialising robot objects.
  *
  */
-void EMUFourierMachine::init() {
-    spdlog::debug("EMUFourierMachine::init()");
+void EMUDeweighting::init() {
+    spdlog::debug("EMUDeweighting::init()");
     if(robot()->initialise()) {
-        logHelper.initLogger("EMUFourierMachineLog", "logs/EMUFourierMachine.csv", LogFormat::CSV, true);
+        logHelper.initLogger("EMUDeweightingLog", "logs/EMUDeweighting.csv", LogFormat::CSV, true);
         logHelper.add(runningTime(), "Time (s)");
         logHelper.add(robot()->getEndEffPosition(), "X");
         logHelper.add(robot()->getEndEffVelocity(), "dX");
@@ -374,7 +375,7 @@ void EMUFourierMachine::init() {
     }
 }
 
-void EMUFourierMachine::end() {
+void EMUDeweighting::end() {
     if(running())
         UIserver->closeConnection();
     StateMachine::end();
@@ -386,7 +387,7 @@ void EMUFourierMachine::end() {
  * that need to run every program loop update cycle.
  *
  */
-void EMUFourierMachine::hwStateUpdate() {
+void EMUDeweighting::hwStateUpdate() {
     StateMachine::hwStateUpdate();
     //UpdateEnergy();
     //Also send robot state over network
