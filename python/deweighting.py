@@ -209,16 +209,11 @@ def FramesToq(xs, ys, zs, xua, yua, zua, zm, yfa):
 
     epsilon=np.pi/50 #~<4degrees
     if(q_ele>epsilon):
-        #q_pel = np.arccos(np.dot(-zs, unitV(yua-np.dot(yua, ys)*ys)))
         q_pel = np.arccos(np.dot(-zs, zm)) #Planele: around Ytrunk: 0 full external, +90 elbow forward, 180 full internal. Computed as angle between Zs(external) and projection of Yua in horizontal shoulder plane (formed by Xs/Zs, with Ys as normal)
     else:
         q_pel = np.NAN #q_pel undefined at 0 elevation
 
-    #print('xs:', xs, '  ys:', ys, '  zs:', zs,  'xua:', xua,  'yua:', yua, '  ')
-    print('zs:', zs, '  zm:', zm,  'zua:', zua)
-
-    #!!! PROPERLY USE FOREARM POINT HERE!! DEFINED EVEN WHEN ELEVAL = 0 if ELBOW FLEXED
-    #!!! ALSO SHOULD WORK FINE WHEN elevation is >0
+    #Undefined if q_pel is undefined
     if(q_ele>epsilon):
         zm = unitV(zm-np.dot(zm, yua)*yua) #first project zm into Xua/Zua plane
         q_rot = -np.arccos(np.dot(zm, zua))+np.pi/2 #Int/ext rotation: around Ytransformed, angle in plane of normal Yua, between Zua and Zs rotated by pel (aka Zm)
@@ -228,15 +223,13 @@ def FramesToq(xs, ys, zs, xua, yua, zua, zm, yfa):
             q_rot = np.arccos(np.dot(zs, zua))
         else:
             q_rot = np.NAN #Trully undefined when arm in full extension
-    #coerce = lambda val: (val+2*np.pi) if val <= -np.pi else (val-2*np.pi) if val > np.pi else val
-    #q_rot = coerce(q_rot)
 
     return  q_pel, q_ele, q_rot, q_elb
 
 
 def IK(jointsPos, arm_side, true_vertical=np.array([]), debug=False):
     """Compute ISB joint angles from MediaPipe joints positions (in mm)
-    making some assumptions on true vertical for trunk pose."""
+    making some assumptions on true vertical for trunk pose if desired."""
 
     # Which arm?
     if(arm_side=='l'):
