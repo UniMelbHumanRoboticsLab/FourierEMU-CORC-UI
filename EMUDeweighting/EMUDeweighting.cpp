@@ -303,8 +303,8 @@ EMUDeweighting::EMUDeweighting() {
     addState("DoNothingState", std::make_shared<M3NothingState>(robot(), this));
     addState("ResetState", std::make_shared<M3NothingState>(robot(), this));
     addState("CalibState", std::make_shared<M3CalibState>(robot(), this));
-    //addState("StandbyState", std::make_shared<M3MassCompensation>(robot(), this));
-    addState("StandbyState", std::make_shared<M3AdvMassCompensation>(robot(), this));
+    addState("StandbyState", std::make_shared<M3MassCompensation>(robot(), this));
+    addState("DeweighState", std::make_shared<M3AdvMassCompensation>(robot(), this));
     addState("MinJerkState", std::make_shared<M3MinJerkPosition>(robot(), this));
     addState("PathState", std::make_shared<M3PathState>(robot(), this));
     addState("LockState", std::make_shared<M3LockState>(robot(), this));
@@ -322,10 +322,12 @@ EMUDeweighting::EMUDeweighting() {
     addTransition("MinJerkState", &goToPath, "PathState");
     addTransition("PathState", &updatePath, "PathState"); //Fake transition never returning true
 
-    addTransition("StandbyState", &goToGravity, "StandbyState");
-    addTransition("ResetState", &goToGravity, "StandbyState");
-    addTransition("MinJerkState", &goToGravity, "StandbyState");
-    addTransition("PathState", &goToGravity, "StandbyState");
+    addTransition("StandbyState", &goToGravity, "DeweighState");
+    addTransition("DeweighState", &goToGravity, "DeweighState");
+    addTransition("MinJerkState", &goToGravity, "DeweighState");
+    addTransition("PathState", &goToGravity, "DeweighState");
+
+    addTransition("DeweighState", &goToUnlock, "StandbyState");
     addTransition("StandbyState", &updateMass, "StandbyState"); //Fake transition never returning true
 
     addTransition("PathState", &goToLock, "LockState");
@@ -337,6 +339,8 @@ EMUDeweighting::EMUDeweighting() {
     addTransition("MinJerkState", &goToReset, "ResetState");
     addTransition("PathState", &goToReset, "ResetState");
     addTransition("LockState", &goToReset, "ResetState");
+    addTransition("DeweighState", &goToReset, "ResetState");
+    addTransition("ResetState", &goToGravity, "DeweighState");
 
     addTransitionFromAny(&quit, "StandbyState");
     addTransition("StandbyState", &quit, "StandbyState"); //From any does not apply to self (destination state)

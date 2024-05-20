@@ -52,6 +52,23 @@ typedef struct M3TrajPt
 
 
 /**
+ * \brief Small data structure holding mass compensations tuning parameters
+ *
+ */
+typedef struct Deweight_s
+{
+    double Mass = 0;            //!< Current effective mass compensation
+    double MassTar = 0;         //!< Current mass target, dsired mass to apply: might differ from applied_mass during transition)
+    double MassSet = 1.0;       //!< Expected mass comp to apply when in the appropiate state(cstt for each indiv.)
+    const double MassLimit = 10;   //!< Maximum applicable mass (+ and -)
+    double VelThresh = 0.1;         //!<Velocity threshold to trigger mass change state
+    double ForceThresh = 0.1;         //!<Force threshold to trigger mass change state
+    double MassChangeRate = 4.;     //!< Rate at which mass will increase/decrease during change mass transition (in kg/s)
+    int Algorithm = 0;
+
+} Deweight_s;
+
+/**
  * \brief Generic state type for used with M3DemoMachine, providing running time and iterations number: been superseeded by default state, not very much useful anymore.
  *
  */
@@ -183,16 +200,8 @@ class M3AdvMassCompensation : public EMUFourierState {
     void duringCode(void);
     void exitCode(void);
 
-    void setMass(double m) {mass=m; std::cout << "Mass: " << mass << std::endl;}
-
    private:
-     const double transition_t = 1.;        //!< Time to apply progressive transition (no friction comp)
-     const double mass_limit = 10;          //!< Maximum applicable mass (+ and -)
-     double mass = 0;                       //!< Desired mass to apply: might differ from applied_mass during transition (i.e. setMass)
-     double cstt_mass = 1.0;
-     double thresh = 0.1;
-     double applied_mass = 0;               //!< Currently appied mass
-     double change_mass_rate = 4.;          //!< Rate at which mass will increase/decrease during change mass transition (in kg/s)
+    const double transition_t = 1.;        //!< Time to apply progressive transition (no friction comp)
 };
 
 

@@ -73,17 +73,6 @@ void M3MassCompensation::entryCode(void) {
     sm->Contribution = .0;
     sm->MvtProgress = .0;
 
-    if(spdlog::get_level()<=spdlog::level::debug) {
-        stateLogger.initLogger("DeweightControlLog", "logs/EMUDeweightCtrl.csv", LogFormat::CSV, true);
-        stateLogger.add(running(), "%Time (s)");
-        stateLogger.add(robot->getEndEffPosition(), "X");
-        stateLogger.add(robot->getEndEffVelocity(), "dX");
-        stateLogger.add(robot->getInteractionForce(), "F");
-        stateLogger.add(robot->getEndEffVelocityFiltered(), "dXfilt");
-        stateLogger.add(robot->getEndEffAcceleration(), "ddXfilt");
-        stateLogger.startLogger();
-    }
-
     std::cout << "Press S to decrease mass (-100g), W to increase (+100g)." << std::endl;
 }
 void M3MassCompensation::duringCode(void) {
@@ -133,9 +122,10 @@ void M3MassCompensation::exitCode(void) {
     robot->setEndEffForceWithCompensation(VM3(0,0,sm->MassComp*9.8), false);
 }
 
+
 void M3AdvMassCompensation::entryCode(void) {
     //robot->initTorqueControl();
-    robot->setEndEffForceWithCompensation(VM3(0,0,sm->MassComp*9.8), false);
+    robot->setEndEffForceWithCompensation(VM3(0,0,sm->DwData.Mass*9.8), false);
     sm->Command = 20;
     sm->Contribution = .0;
     sm->MvtProgress = .0;
@@ -148,92 +138,122 @@ void M3AdvMassCompensation::entryCode(void) {
         stateLogger.add(robot->getInteractionForce(), "F");
         stateLogger.add(robot->getEndEffVelocityFiltered(), "dXfilt");
         stateLogger.add(robot->getEndEffAcceleration(), "ddXfilt");
+        stateLogger.add(sm->DwData.MassTar, "massCompTar");
+        stateLogger.add(sm->DwData.Mass, "massCompRT");
         stateLogger.startLogger();
     }
 
     std::cout << "Press S to decrease mass (-100g), W to increase (+100g)." << std::endl;
+    std::cout << "Press 1 for algo 1, 2 for algo 2." << std::endl;
 }
 void M3AdvMassCompensation::duringCode(void) {
 
     //Bound mass to +-5kg
-    if(mass>mass_limit) {
-        mass = mass_limit;
+    if(sm->DwData.MassTar>sm->DwData.MassLimit) {
+        sm->DwData.MassTar = sm->DwData.MassLimit;
     }
-    if(mass<-mass_limit) {
-        mass = -mass_limit;
+    if(sm->DwData.MassTar<-sm->DwData.MassLimit) {
+        sm->DwData.MassTar = -sm->DwData.MassLimit;
     }
 
     //Calculate effective applied mass based on possible transition (change mass rate)
-    sm->MassComp += sign(mass - sm->MassComp)*change_mass_rate*dt();
+    sm->DwData.Mass += sign(sm->DwData.MassTar - sm->DwData.Mass)*sm->DwData.MassChangeRate*dt();
 
     //If after transitioning damping time
     if(running()>transition_t) {
         //Apply corresponding deweighting force
-        robot->setEndEffForceWithCompensation(VM3(0,0,sm->MassComp*9.8), true);
+        robot->setEndEffForceWithCompensation(VM3(0,0,sm->DwData.Mass*9.8), true);
     }
     else {
         //Apply corresponding deweighting force w/o friction comp
-        robot->setEndEffForceWithCompensation(VM3(0,0,sm->MassComp*9.8), false);
+        robot->setEndEffForceWithCompensation(VM3(0,0,sm->DwData.Mass*9.8), false);
     }
 
     //Mass controllable through keyboard inputs
     if(robot->keyboard->getS()) {
-        mass -=0.5;robot->printStatus();
+        sm->DwData.MassSet -=0.5;
+        robot->printStatus();
         robot->printJointStatus();
-        std::cout << "Mass: " << cstt_mass << std::endl;
+        std::cout << "Mass: " << sm->DwData.MassSet << std::endl;
     }
     if(robot->keyboard->getW()) {
-        mass +=0.5;robot->printStatus();
+        sm->DwData.MassSet +=0.5;
+        robot->printStatus();
         robot->printJointStatus();
-        std::cout << "Mass: " << cstt_mass << std::endl;
+        std::cout << "Mass: " << sm->DwData.MassSet << std::endl;
     }
 
     if(robot->keyboard->getKeyUC()=='Z') {
-        thresh -=0.05;
-        std::cout << "thresh: " << thresh << std::endl;
+        sm->DwData.VelThresh -=0.05;
+        sm->DwData.ForceThresh -=0.05;
+        std::cout << "thresh: " << sm->DwData.VelThresh << std::endl;
     }
     if(robot->keyboard->getKeyUC()=='A') {
-        thresh +=0.05;
-        std::cout << "thresh: " << thresh << std::endl;
+        sm->DwData.VelThresh +=0.05;
+        sm->DwData.ForceThresh -=0.05;
+        std::cout << "thresh: " << sm->DwData.VelThresh << std::endl;
     }
 
     if(robot->keyboard->getKeyUC()=='B') {
-        change_mass_rate -=0.5;
-        std::cout << "rate: " << change_mass_rate << std::endl;
+        sm->DwData.MassChangeRate -=0.5;
+        std::cout << "rate: " << sm->DwData.MassChangeRate << std::endl;
     }
     if(robot->keyboard->getKeyUC()=='G') {
-        change_mass_rate +=0.5;
-        std::cout << "rate: " << change_mass_rate << std::endl;
+        sm->DwData.MassChangeRate +=0.5;
+        std::cout << "rate: " << sm->DwData.MassChangeRate << std::endl;
+    }
+
+    if(robot->keyboard->getNb()==0) {
+        sm->DwData.Algorithm=0;
+        std::cout << "No Algo 0" << std::endl;
+    }
+    if(robot->keyboard->getNb()==1) {
+        sm->DwData.Algorithm=1;
+        std::cout << "Algo 1 " << std::endl;
+    }
+    if(robot->keyboard->getNb()==2) {
+        sm->DwData.Algorithm=2;
+        std::cout << "Algo 2 " << std::endl;
     }
 
 
     double Vz = robot->getEndEffVelocity()[2];
     double Fz = robot->getInteractionForce()[2];
-    if(Vz<-thresh){
-        mass = 0;
-    }
-    else {
-        mass = cstt_mass;
+
+    switch(sm->DwData.Algorithm)
+    {
+        case 1:
+            //Simply detect velocity downwards: if larger than threshold, start removing compensation
+            if(Vz<-sm->DwData.VelThresh){
+                sm->DwData.MassTar = 0;
+            }
+            else {
+                sm->DwData.MassTar = sm->DwData.MassSet;
+            }
+            break;
+
+        default:
+            sm->DwData.MassTar = sm->DwData.MassSet;
     }
 
 
     if(iterations()%50==1) {
         if(spdlog::get_level()<=spdlog::level::debug) {
             //printProgressCenter(Vz, "Speed Z\t\t", "Vz="+to_string(Vz)+"\n");
-            //printProgressCenter(Fz/20., "Force Z\t\t", "Fz="+to_string(Fz)+"\n");
-            if(Vz<-thresh){
+            printProgressCenter(Fz/20., "Force Z\t\t", "Fz="+to_string(Fz)+"\n");
+            if(Vz<-sm->DwData.VelThresh){
                 printProgressCenter(-0.5, "", "\t", 40);
             }
             else {
                 printProgressCenter(0.5, "", "\t", 40);
             }
-            printProgress(sm->MassComp/2, "Mass:", to_string(sm->MassComp)+"kg\n", 50);
+            printProgress(sm->DwData.Mass/2, "Mass:", to_string(sm->DwData.Mass)+"kg\n", 50);
         }
     }
 
 }
 void M3AdvMassCompensation::exitCode(void) {
-    robot->setEndEffForceWithCompensation(VM3(0,0,sm->MassComp*9.8), false);
+    robot->setEndEffForceWithCompensation(VM3(0,0,sm->DwData.Mass*9.8), false);
 }
 
 

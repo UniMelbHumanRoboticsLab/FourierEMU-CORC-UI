@@ -41,7 +41,9 @@ class EMUDeweighting : public StateMachine {
     double Command = 0;         //!< Command (state) currently applied
     double MvtProgress = 0;     //!< Progress (status) along mvt
     double Contribution = 0;    //!< User contribution to mvt
-    double MassComp = 0;        //!< Current mass compensation
+    double MassComp =0;         //!< Mass comp value used for standard operations
+    Deweight_s DwData;
+
 
     void UpdateEnergy();
     double Energy = 0;
