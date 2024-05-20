@@ -13,6 +13,7 @@
 #include "State.h"
 #include "RobotM3.h"
 #include "LogHelper.h"
+#include "FLNLHelper.h"
 
 class EMUDeweighting;
 
@@ -62,6 +63,7 @@ typedef struct Deweight_s
     double MassSet = 1.0;       //!< Expected mass comp to apply when in the appropiate state(cstt for each indiv.)
     const double MassLimit = 10;   //!< Maximum applicable mass (+ and -)
     double VelThresh = 0.1;         //!<Velocity threshold to trigger mass change state
+    double AccThresh = 0.05;         //!<Acceleration threshold to trigger mass change state
     double ForceThresh = 0.1;         //!<Force threshold to trigger mass change state
     double MassChangeRate = 4.;     //!< Rate at which mass will increase/decrease during change mass transition (in kg/s)
     int Algorithm = 0;
@@ -140,10 +142,10 @@ class M3CalibState : public EMUFourierState {
     bool isCalibDone() {return calibDone;}
 
    private:
-     VM3 qi;
-     VM3 stop_reached_time;
-     bool at_stop[3];
-     bool calibDone=false;
+    VM3 qi;
+    VM3 stop_reached_time;
+    bool at_stop[3];
+    bool calibDone=false;
 };
 
 
@@ -183,24 +185,49 @@ class M3MassCompensation : public EMUFourierState {
     void setMass(double m) {mass=m; std::cout << "Mass: " << mass << std::endl;}
 
    private:
-     const double transition_t = 1.;        //!< Time to apply progressive transition (no friction comp)
-     const double mass_limit = 10;          //!< Maximum applicable mass (+ and -)
-     double mass = 0;                       //!< Desired mass to apply: might differ from applied_mass during transition (i.e. setMass)
-     double applied_mass = 0;               //!< Currently appied mass
-     double change_mass_rate = 2.;          //!< Rate at which mass will increase/decrease during change mass transition (in kg/s)
+    const double transition_t = 1.;        //!< Time to apply progressive transition (no friction comp)
+    const double mass_limit = 10;          //!< Maximum applicable mass (+ and -)
+    double mass = 0;                       //!< Desired mass to apply: might differ from applied_mass during transition (i.e. setMass)
+    double applied_mass = 0;               //!< Currently appied mass
+    double change_mass_rate = 2.;          //!< Rate at which mass will increase/decrease during change mass transition (in kg/s)
 };
 
 
-class M3AdvMassCompensation : public EMUFourierState {
+/**
+ * \brief Provide end-effector deweighting on M3. Implement various deweighting algorithms, with smooth transitions.
+ * Assumes drives in torque control already.
+ *
+ */
+class M3AdvDeweighting : public EMUFourierState {
 
    public:
-    M3AdvMassCompensation(RobotM3 * M3, EMUDeweighting *sm, const char *name = "M3 Advanced Mass Compensation"):EMUFourierState(M3, sm, name){};
+    M3AdvDeweighting(RobotM3 * M3, EMUDeweighting *sm, const char *name = "M3 Advanced Deweighting"):EMUFourierState(M3, sm, name){};
 
     void entryCode(void);
     void duringCode(void);
     void exitCode(void);
 
    private:
+    const double transition_t = 1.;        //!< Time to apply progressive transition (no friction comp)
+};
+
+
+/**
+ * \brief Provide end-effector mass compensation on M3. Implement various deweighting algorithms, based on network received force to apply.
+ * Assumes drives in torque control already.
+ *
+ */
+class M3FLNLDeweighting : public EMUFourierState {
+
+   public:
+    M3FLNLDeweighting(RobotM3 * M3, EMUDeweighting *sm, const char *name = "M3 FLNL Deweighting"):EMUFourierState(M3, sm, name){};
+
+    void entryCode(void);
+    void duringCode(void);
+    void exitCode(void);
+
+   private:
+    std::shared_ptr<FLNLHelper> server;    //!< FLNL server to receive deweighting force commands to apply
     const double transition_t = 1.;        //!< Time to apply progressive transition (no friction comp)
 };
 

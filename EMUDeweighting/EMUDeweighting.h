@@ -1,8 +1,8 @@
 /**
  * \file EMUDeweighting.h
  * \author Vincent Crocher
- * /brief The EMUDeweighting class is a state machine aims to evaluate deweighting algorithms on EMU device
- * \date 2024-03-26
+ * \brief The EMUDeweighting class is a state machine aims to evaluate deweighting algorithms on EMU device
+ * \date 2024-05-20
  *
  * \copyright Copyright (c) 2024
  *
@@ -43,10 +43,6 @@ class EMUDeweighting : public StateMachine {
     double Contribution = 0;    //!< User contribution to mvt
     double MassComp =0;         //!< Mass comp value used for standard operations
     Deweight_s DwData;
-
-
-    void UpdateEnergy();
-    double Energy = 0;
 };
 
 #endif /*M3_SM_H*/

@@ -17,6 +17,7 @@ def Checksum(b):
         ck = ck ^ b[i]
     return ck
 
+## TODO: develop client version
 
 class FLNLServer:
 

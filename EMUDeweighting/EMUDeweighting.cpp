@@ -280,31 +280,21 @@ bool updateMass(StateMachine & SM) {
 }
 
 
-//Simple passivity observer updated every loop, updating Energy value
-void EMUDeweighting::UpdateEnergy() {
-    if(robot()->isCalibrated()) {
-        Energy += robot()->getEndEffVelocity().dot(robot()->getInteractionForce())*state()->dt();
-        //Display energy
-        if(spdlog::get_level()<=spdlog::level::debug) {
-            if(state()->iterations()%50==1) {
-                printProgressCenter(Energy/100., "Energy:", "E="+to_string(Energy)+"\n");
-            }
-        }
-    }
-}
-
 
 EMUDeweighting::EMUDeweighting() {
     //Create a Robot and set it to generic state machine
     setRobot(std::make_unique<RobotM3>("EMU_FOURIER", "M3_params.yaml"));
     //setRobot(std::make_unique<RobotM3>("EMU_MELB", "M3_params.yaml"));
 
+    //TODO: include new FLNL state and associated transitions
+    //TODO: proper logic and transitions
+
     //Create state instances and add to the State Machine
     addState("DoNothingState", std::make_shared<M3NothingState>(robot(), this));
     addState("ResetState", std::make_shared<M3NothingState>(robot(), this));
     addState("CalibState", std::make_shared<M3CalibState>(robot(), this));
     addState("StandbyState", std::make_shared<M3MassCompensation>(robot(), this));
-    addState("DeweighState", std::make_shared<M3AdvMassCompensation>(robot(), this));
+    addState("DeweighState", std::make_shared<M3AdvDeweighting>(robot(), this));
     addState("MinJerkState", std::make_shared<M3MinJerkPosition>(robot(), this));
     addState("PathState", std::make_shared<M3PathState>(robot(), this));
     addState("LockState", std::make_shared<M3LockState>(robot(), this));
@@ -393,7 +383,6 @@ void EMUDeweighting::end() {
  */
 void EMUDeweighting::hwStateUpdate() {
     StateMachine::hwStateUpdate();
-    //UpdateEnergy();
     //Also send robot state over network
     UIserver->sendState();
     //Attempt to reconnect (if not already waiting for connection)
