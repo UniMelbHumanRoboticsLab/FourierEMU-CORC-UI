@@ -1,6 +1,6 @@
-# FLNL server (see https://github.com/vcrocher/libFLNL)
+# FLNL client-server (see https://github.com/vcrocher/libFLNL)
 #
-# Vincent Crocher - Unimelb - 2022
+# Vincent Crocher - Unimelb - 2022, 2024
 # 
 # Apache 2.0 License
 
@@ -17,10 +17,13 @@ def Checksum(b):
         ck = ck ^ b[i]
     return ck
 
-## TODO: develop client version
 
-class FLNLServer:
 
+#TODO: extend with cmd associate values reception
+
+class FLNL:
+    MAXVALS=31    
+    
     def __init__(self):
         self.newCmdRcv = False
         self.newValsRcv = False
@@ -28,50 +31,16 @@ class FLNLServer:
         self.Connected = False
         self.receiving=False
     
-    #NOT TESTED
-    def ProcessRcvValues(self, data, nbvals):
-        for i in range(nbvals):
-            self.ValsRcv[i] = struct.unpack('d', data[i*8])[0]
     
-    def recFct(self):
-        while self.receiving:
-            data = self.connection.recv(255)
-            if data:
-                if data[0]==ord('C'):
-                    #print('Cmd: '+str(data[2:5]))
-                    self.newCmdRcv = True
-                    self.CmdRcv = data[2:5].decode("utf-8")
-                    nbvals = data[1]
-                    self.ProcessRcvValues(data[6:6+8*nbvals], nbvals)
-                if data[0]==ord('V'):
-                    nbvals = data[1]
-                    #print('Values ('+str(nbvals)+')')
-                    self.ProcessRcvValues(self, data[2:2+8*nbvals], nbvals)
-                    self.newValsRcv = True
+    def __del__(self):
+        self.Close()
     
-    def WaitForClient(self, ip="127.0.0.1", port=2042):
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        server_address = (ip, port)
-        self.sock.bind(server_address)
-        self.sock.listen(1)
-        
-        # Wait for a connection
-        print('FLNL: Waiting for a connection ('+ip+':'+str(port)+')...')
-        self.connection, client_address = self.sock.accept()
-        print('FLNL: Connected!');
-        self.Connected = True
-
-        #Create reception thread
-        self.receiving=True
-        recPr = threading.Thread(target=self.recFct, daemon=True)
-        recPr.start()
-
     def IsConnected(self):
         return self.Connected
 
     def SendValues(self, vals):
         if(self.Connected):
-            if(len(vals)>31):
+            if(len(vals)>self.MAXVALS):
                 print('FLNL: Error, too many values to send')
                 return
         
@@ -91,7 +60,14 @@ class FLNLServer:
             tosend[255-1]=Checksum(tosend);
             
             #send
-            self.connection.sendall(tosend)
+            try:
+                self.connection.sendall(tosend)
+            except (BrokenPipeError, ConnectionResetError):
+                self.Connected=False
+                self.receiving=False
+                return False
+                
+            return True
         
 
 
@@ -125,27 +101,132 @@ class FLNLServer:
             tosend[255-1]=Checksum(tosend);
             
             #send
-            self.connection.sendall(tosend)
+            try:
+                self.connection.sendall(tosend)
+            except (BrokenPipeError, ConnectionResetError):
+                self.Connected=False
+                self.receiving=False
+                return False
+            
+            return True
 
 
+    def ProcessRcvValues(self, data, nbvals):
+        self.ValsRcv=[]
+        for i in range(0, 8*nbvals, 8):
+            self.ValsRcv.append(struct.unpack('d', bytearray(data[i:i+8]))[0])
+    
+    def recFct(self):
+        while self.receiving:
+            try: 
+                data = self.connection.recv(255, socket.MSG_DONTWAIT)
+            except BlockingIOError:
+                continue
+            except (BrokenPipeError, ConnectionResetError):
+                self.Connected=False
+                self.receiving=False
+                return False
+            
+            if data:
+                if data[0]==ord('C'):
+                    #print('Cmd: '+str(data[2:5]))
+                    self.newCmdRcv = True
+                    self.CmdRcv = data[2:5].decode("utf-8")
+                    nbvals = data[1]
+                    self.ProcessRcvValues(data[6:6+8*nbvals], nbvals)
+                if data[0]==ord('V'):
+                    nbvals = data[1]
+                    #print('Values ('+str(nbvals)+')')
+                    self.ProcessRcvValues(data[2:2+8*nbvals], nbvals)
+                    self.newValsRcv = True
+
+
+    def IsValues(self):
+        return self.newValsRcv
+    
+    def GetValues(self):
+        if(self.newValsRcv):
+            self.newValsRcv = False
+            return self.ValsRcv
+        else:
+            return []
+
+    def IsAnyCmd(self):
+        return self.newCmdRcv
+            
     def IsCmd(self, cmd):
         if self.newCmdRcv and self.CmdRcv==cmd:
-            print(self.CmdRcv)
-            self.newCmdRcv=False;
+            self.newCmdRcv = False;
             return True
         else:
             return False
 
-
     def GetCmd(self):
         if(self.newCmdRcv):
-            self.newCmdRcv=False;
-            return CmdRcv
+            self.newCmdRcv = False;
+            return self.CmdRcv
         else:
             return ""
 
 
+class FLNLServer(FLNL):    
+    
+    def WaitForClient(self, ip="127.0.0.1", port=2042):
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server_address = (ip, port)
+        self.sock.bind(server_address)
+        self.sock.listen(1)
+        
+        # Wait for a connection (blocking)
+        print('FLNLServer: Waiting for a connection ('+ip+':'+str(port)+')...')
+        self.connection, client_address = self.sock.accept()
+        print('FLNLServer: Client connected!');
+        self.Connected = True
+
+        #Create reception thread
+        self.receiving = True
+        recPr = threading.Thread(target=self.recFct, daemon=True)
+        recPr.start()
+
+
     def Close(self):
+        if(self.Connected):
+            self.connection.close()
         self.Connected=False
-        self.receiving=False;
-        self.connection.close()
+        self.receiving=False
+
+
+class FLNLClient(FLNL):
+    
+    def Connect(self, ip="127.0.0.1", port=2042):
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server_address = (ip, port)
+        
+        # Connection
+        print('FLNLClient: connecting to ('+ip+':'+str(port)+')...')
+        try:
+            self.sock.connect(server_address)
+        except:
+            print('FLNLClient: Connection failed!');
+            self.Connected = False        
+            return self.Connected
+
+        print('FLNLClient: Client connected!');
+        self.connection = self.sock
+        self.Connected = True
+ 
+        #Create reception thread
+        self.receiving=True
+        recPr = threading.Thread(target=self.recFct, daemon=True)
+        recPr.start()
+        
+        return self.Connected
+        
+
+    def Close(self):
+        self.receiving=False
+        if(self.Connected):
+            self.connection.close()
+        self.Connected=False
+
+
