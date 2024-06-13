@@ -185,6 +185,7 @@ class M3MassCompensation : public EMUFourierState {
     void setMass(double m) {mass=m; std::cout << "Mass: " << mass << std::endl;}
 
    private:
+    std::vector<double> accel;
     const double transition_t = 1.;        //!< Time to apply progressive transition (no friction comp)
     const double mass_limit = 10;          //!< Maximum applicable mass (+ and -)
     double mass = 0;                       //!< Desired mass to apply: might differ from applied_mass during transition (i.e. setMass)

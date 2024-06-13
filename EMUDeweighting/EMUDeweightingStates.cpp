@@ -115,6 +115,12 @@ void M3MassCompensation::duringCode(void) {
             double v = robot->getEndEffVelocity().norm();
             printProgress(v, "Speed\t", "vFilt="+to_string(v)+"\n");
         }
+        if (sm->UIserver->isCmd("LACC", accel))
+        {
+            std::cout << "Acceleration x: " << to_string(accel[0]) << std::endl;
+            std::cout << "Acceleration y: " << to_string(accel[1]) << std::endl;
+            std::cout << "Acceleration z: " << to_string(accel[2]) << std::endl;
+        }
     }
 
 }

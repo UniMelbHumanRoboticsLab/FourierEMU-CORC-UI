@@ -354,10 +354,11 @@ void EMUDeweighting::init() {
         logHelper.add(robot()->getEndEffAcceleration(), "ddX");
         logHelper.add(robot()->getEndEffVelocityFiltered(), "dXFilt");
         #ifdef NOROBOT
-            //UIserver = std::make_shared<FLNLHelper>(*robot(), "127.0.0.1");
-            UIserver = std::make_shared<FLNLHelper>(*robot(), "192.168.7.2");
+            UIserver = std::make_shared<FLNLHelper>(*robot(), "127.0.0.1");
+            // UIserver = std::make_shared<FLNLHelper>(*robot(), "192.168.7.2");
         #else
-            UIserver = std::make_shared<FLNLHelper>(*robot(), "192.168.7.2");
+            UIserver = std::make_shared<FLNLHelper>(*robot(), "127.0.0.1");
+            // UIserver = std::make_shared<FLNLHelper>(*robot(), "192.168.7.2");
         #endif // NOROBOT
         UIserver->registerState(Command);
         UIserver->registerState(MvtProgress);

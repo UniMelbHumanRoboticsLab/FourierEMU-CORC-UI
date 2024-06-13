@@ -86,3 +86,7 @@ crashlytics-build.properties
 /TestLogs/
 /MediaPipe/dist/
 /MediaPipe/bin/
+.vscode/settings.json
+python/run_accelFLNL.sh
+python/__pycache__/FLNL.cpython-311.pyc
+CANOpenRobotController
