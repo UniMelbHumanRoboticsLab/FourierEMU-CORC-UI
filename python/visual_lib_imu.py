@@ -49,12 +49,14 @@ def sample(*data_connectors, visual_val="Orient:"):
                 print("Arduino Disconnected\n")
                 stop()
         else:
+            # if client.Connected == False:
+            #     print("Server Disconnected\n")
+            #     stop()
             try:
                 cur_runtime = time.time()
                 str = packet.decode('utf')[:-2]
                 tokens = str.split("\t")
                 val_str = [word[2:-2] for word in tokens[1:]]
-                
                 
                 if tokens[0] == 'Orient:':
                     cmd_type = "ORT"
@@ -74,7 +76,7 @@ def sample(*data_connectors, visual_val="Orient:"):
                 else:
                     continue
                 
-                # Send 1 and visualize
+                # Send 1 command + values and visualize
                 if (tokens[0] == visual_val):
                     timestamp = time.time()
                     print(f"epoch: {timestamp}, {str}")
@@ -87,6 +89,6 @@ def sample(*data_connectors, visual_val="Orient:"):
                 print("Aligning Serial\n")
                 print(error)
                 continue
-            
+
 # Connect SIGINT with stop function
 signal.signal(signal.SIGINT, lambda sig, frame: stop())
