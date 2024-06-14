@@ -90,3 +90,5 @@ crashlytics-build.properties
 python/run_accelFLNL.sh
 python/__pycache__/FLNL.cpython-311.pyc
 CANOpenRobotController
+python/__pycache__/qt6lib_accel.cpython-311.pyc
+python/__pycache__/visual_lib_imu.cpython-311.pyc
