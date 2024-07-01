@@ -116,7 +116,7 @@ except Exception as error:
     print(error)
     print("COM busy or accelerometer not connected")
 else:
-    if True: #client.Connected:
+    if True:#client.Connected:
         layout.show()
         # Thread(target=sample, args=args, kwargs={"visual_val":"Orient:"}).start()
         Thread(target=sample, args=args2, kwargs={"visual_val":"Linear:"}).start()

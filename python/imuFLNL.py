@@ -11,14 +11,6 @@ from threading import Thread
 from time import sleep
 from typing import Union
 
-from PyQt5.QtWidgets import QWidget, QApplication, QGridLayout
-from pglive.kwargs import Axis
-from pglive.sources.data_connector import DataConnector
-from pglive.sources.live_axis import LiveAxis
-from pglive.sources.live_plot import LiveLinePlot
-from pglive.sources.live_plot_widget import LivePlotWidget
-
-
 ports = serial.tools.list_ports.comports()
 serialInst = serial.Serial()
 portLists = []

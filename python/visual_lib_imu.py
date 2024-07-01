@@ -1,5 +1,6 @@
 import numpy as np
 import time
+import serial
 import serial.tools.list_ports
 from FLNL import * 
 import sys
@@ -61,7 +62,7 @@ def sample(*data_connectors, visual_val="Orient:"):
                 if tokens[0] == 'Orient:':
                     cmd_type = "ORT"
                 elif tokens[0] == 'Linear:':
-                    cmd_type = "ACC"
+                    cmd_type = "LACC"
                 elif tokens[0] == 'Gravit:':
                     cmd_type = "GRA"
                 elif tokens[0] == 'Quater:':
