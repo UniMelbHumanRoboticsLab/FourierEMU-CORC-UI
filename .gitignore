@@ -29,6 +29,7 @@
 
 # Visual Studio cache directory
 .vs/
+.vscode/
 
 # Gradle cache directory
 .gradle/
@@ -78,6 +79,7 @@ crashlytics-build.properties
 *.geany
 *.cbp
 *.layout
+*.pyc
 
 ##Also ignore main CORC stack
 #/CANOpenRobotController/
@@ -87,3 +89,4 @@ crashlytics-build.properties
 /MediaPipe/dist/
 /MediaPipe/bin/
 
+synch_one_drive.sh

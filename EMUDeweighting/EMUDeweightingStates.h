@@ -117,12 +117,26 @@ class EMUFourierState : public State {
  *
  */
 class M3NothingState : public EMUFourierState {
+   private:
+    VX imuData;
 
    public:
     M3NothingState(RobotM3 * M3, EMUDeweighting *sm, const char *name = "M3 Do Nothing"):EMUFourierState(M3, sm, name){};
 
     void entryCode(void) { robot->initTorqueControl(); robot->setJointTorque(VM3(0,0,0)); }
-    void duringCode(void) { robot->setJointTorque(VM3(0,0,0)); }
+    void duringCode(void) 
+    { 
+        robot->setJointTorque(VM3(0,0,0)); 
+        // try to get orientation data
+        if(iterations()%100==1) {
+
+            imuData = robot->getXiaoData(robot->xiao,2);
+            std::cout << "imuData [0]: " << imuData[0] << std::endl;
+            std::cout << "imuData [1]: " << imuData[1] << std::endl;
+            std::cout << "imuData [2]: " << imuData[2] << std::endl;
+        }
+    }
+        
     void exitCode(void) { robot->setJointTorque(VM3(0,0,0)); }
 };
 
