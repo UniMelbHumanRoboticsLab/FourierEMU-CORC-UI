@@ -21,8 +21,8 @@ class J(IntEnum):
     R_Y = 5 #Right eye
     L_H = 23 #Left Hip
     R_H = 24 #Right Hip
-    L_S = 11 #Left Shoulder 
-    R_S = 12 #Right Shoulder 
+    L_S = 11 #Left Shoulder
+    R_S = 12 #Right Shoulder
     L_E = 13 #Left Elbow
     R_E = 14 #Right Elbow
     L_W = 15 #Left Wrist
@@ -33,35 +33,39 @@ class PoseDetector:
     def __init__(self):
         self.mpDraw = mp.solutions.drawing_utils
         self.mpPose = mp.solutions.pose
-        self.pose = self.mpPose.Pose(model_complexity=0, min_detection_confidence=0.5, min_tracking_confidence=0.5)
+        self.pose = self.mpPose.Pose(model_complexity=0,
+                                     min_detection_confidence=0.5,
+                                     min_tracking_confidence=0.5,
+                                     smooth_landmarks=True)
 
     def findPose(self, img, arm_side, objects_to_track, draw=False):
         self.results = self.pose.process(img)
 
         if draw:
+            img.setflags(write=True)
             if arm_side=='r':
                 POSE_CONNECTIONS = frozenset([(5, 2), (11, 12), (12, 14), (14, 16), (11, 23), (12, 24),(23,24)])
             else:
                 POSE_CONNECTIONS = frozenset([(5, 2), (12, 11), (11, 13), (13, 15), (11, 23), (12, 24),(23,24)])
             if self.results.pose_landmarks:
                     self.mpDraw.draw_landmarks(img, self.results.pose_landmarks, POSE_CONNECTIONS)
-        
+
         #Image positions of landmarks:
         jointsImgPos = {}
         if self.results.pose_landmarks:
             h, w, c = img.shape
             for joint_id in objects_to_track:
                 joint=self.results.pose_landmarks.landmark[joint_id]
-                cx, cy = int(joint.x * w), int(joint.y * h)                
+                cx, cy = int(joint.x * w), int(joint.y * h)
                 if draw:
-                    cv2.circle(img, (cx, cy), 8, (255, 0, 0))#, cv2.FILLED)
+                    img = cv2.circle(img, (cx, cy), 8, (255, 0, 0))#, cv2.FILLED)
                 if cx<w and cy<h:
                     jointsImgPos[joint_id] = [cx, cy]
                 else:
                     jointsImgPos[joint_id] = [np.NAN, np.NAN]
         if draw:
             cv2.imshow('Frame', img)
-        
+
         # ## TODO: use self.results.pose_world_landmarks instead???
         # if self.results.pose_world_landmarks:
             # x1 = self.results.pose_world_landmarks.landmark[11].x;
@@ -112,13 +116,13 @@ def lowpass(ang1,ang2,ang3,ang4):
                                     # refine_edges=1,
                                     # decode_sharpening=0.25,
                                     # debug=0)
-                                    
+
     # def getPose(self, frame, color_intrin, depth_intrin, draw=False):
         # tagSize = 0.05  # Meter
         # gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         # tags = self.at_detector.detect(gray, estimate_tag_pose=True, camera_params=[color_intrin.fx, color_intrin.fy, color_intrin.ppx, color_intrin.ppy],
                                           # tag_size=tagSize)
-                                          
+
         # if (len(tags) != 0):
             # transformation = np.append(tags[0].pose_R, tags[0].pose_t, axis=1)
             # transformation = np.append(transformation, np.array([[0,0,0,1]]), axis=0)
@@ -150,7 +154,7 @@ def lowpass(ang1,ang2,ang3,ang4):
             # lttag = [np.NAN,np.NAN,np.NAN]
             # if draw:
                 # cv2.imshow('Tag', frame)
-        
+
         # return tags #TODO
 
 
@@ -173,7 +177,7 @@ def transform3DPoints(pts):
         E = np.array(pts[J.R_E])
         ## wrist
         W = np.array(pts[J.R_W])
-    
+
     Tc0=np.eye(4)
     Tc0[0:3,3]=S
     #shoulder-shoulder vector as X
@@ -184,21 +188,21 @@ def transform3DPoints(pts):
     Tc0[0:3,1] = np.cross(S-Head, Tc0[0:3,0])
     Tc0[0:3,1] = Tc0[0:3,1]/norm(Tc0[0:3,1])
     Tc0[0:3,2] = np.cross(Tc0[0:3,0],Tc0[0:3,1])
-    
+
     T0c=inv(Tc0)
-    
+
     ## Apply transformation to remaining joints
     S = np.matmul(T0c, np.append(S,1))[0:3]
     E = np.matmul(T0c, np.append(E,1))[0:3]
     W = np.matmul(T0c, np.append(W,1))[0:3]
-    
-    
+
+
     np.set_printoptions(precision=2)
     np.set_printoptions(suppress=True)
     print(Tc0)
     print(E)
     print(W)
-    
+
     return 0
 
 #Compute distance between two joints
@@ -218,7 +222,7 @@ def main():
     else:
         drawing=False
         print("Visualisation OFF")
-    
+
     recording=False
     if len(sys.argv)>2:
         if sys.argv[2] == "1":
@@ -231,7 +235,7 @@ def main():
     else:
         recording=False
         print("Recording OFF")
-        
+
     noClientTesting=False
     if len(sys.argv)>3:
         if sys.argv[3] == "1":
@@ -243,7 +247,7 @@ def main():
     else:
         noClientTesting=False
         print("Testing no FLNL OFF")
-        
+
     #Arm side to track
     armSide='l';
     # Left eye, Right eye, Left Hip, Right Hip, Left Shoulder, Right Shoulder, Left Elbow, Left Wrist
@@ -261,7 +265,7 @@ def main():
 
     ### Init detection processes: arms poses and Tag
     #tag = AprilTag()
-    
+
     ## Start FLNL and wait for connection
     server = FLNLServer()
     if(noClientTesting):
@@ -273,15 +277,15 @@ def main():
         streaming=False
         server.WaitForClient() #on default address 127.0.0.1 and port 2042
         print("FLNL connected")
-    
+
     ## Init pose detector
     detector = PoseDetector()
-    
+
     cTime = 0
     pTime = 0
     fps = 0
     while(server.IsConnected() or noClientTesting):
-        
+
         ## When connected, continue detection
         #Use realsense camera:
         if(rs.init):
@@ -289,22 +293,22 @@ def main():
             ret, color_image, depth_image = rs.get_frame_stream()
             # copy
             frame = color_image.copy()
-            
+
             color_image = cv2.cvtColor(color_image, cv2.COLOR_BGR2RGB)
         else:
             # Webcam otherwise
             sucess, frame = cap.read()
         frame.flags.writeable = False
-            
+
         ## Get landmarks image position
         jointsPosImg = detector.findPose(frame, armSide, objects_to_track, drawing)
-        
+
         ## Convert to 3D
         if(rs.init and len(jointsPosImg)>0):
             jointsPos = rs.imgTo3D(jointsPosImg, depth_image)
             # Transform to shoulder frame
             #transform3DPoints(jointsPos)
-        
+
         ## Get April tags
         #if(rs.init):
         #    tags = tag.getPose(frame, color_intrin, depth_intrin, drawing)
@@ -313,7 +317,7 @@ def main():
         if(streaming):
             if(recording):
                 video.write(color_image)
-        
+
             if len(jointsPosImg)>0:
                 ## Build values to send: ArmSide (0:l,1:r), joints img pos, 3d img pos
                 val = []
@@ -342,8 +346,8 @@ def main():
                 else:
                     server.SendValues(val)
                     print(fps)
-                
-        
+
+
         ##Process incoming commands if we are connected
         if(not noClientTesting):
             ## Start streaming?
@@ -354,32 +358,32 @@ def main():
                     rs.recorder.resume()
                     print("Start recording stream")
 
-            ## Stop streaming?  
+            ## Stop streaming?
             if(server.IsCmd("STO")):
                 streaming=False
                 print("Stop streaming values")
                 if(rs.init and recording):
                     rs.recorder.pause()
                     print("Stop recording stream")
-                
+
             ## Set to left arm
             if(server.IsCmd("ARL")):
                 armSide='l'
                 # Left eye, Right eye, Left Hip, Right Hip, Left Shoulder, Right Shoulder, Left Elbow, Left Wrist
                 objects_to_track = [J.L_Y, J.R_Y, J.L_H, J.R_H, J.L_S, J.R_S, J.L_E, J.L_W]
                 print("Tracking LEFT arm")
-                
+
             ## Set to right arm
             if(server.IsCmd("ARR")):
                 armSide='r'
                 # Left eye, Right eye, Left Hip, Right Hip, Left Shoulder, Right Shoulder, Right Elbow, Right Wrist
                 objects_to_track = [J.L_Y, J.R_Y, J.L_H, J.R_H, J.L_S, J.R_S, J.R_E, J.R_W]
                 print("Tracking RIGHT arm")
-                
+
             ## Disconnect command
             if(server.IsCmd("DIS")):
                 break
-        
+
         else:## For testing when not connected
             k = cv2.waitKey(1)
             ## Start streaming?
@@ -389,7 +393,7 @@ def main():
                 if(rs.init and recording):
                     rs.recorder.resume()
                     print("Start recording stream")
-            
+
             ## Stop streaming?
             if(k==ord('s')):
                 streaming=False
@@ -397,21 +401,21 @@ def main():
                 if(rs.init and recording):
                     rs.recorder.pause()
                     print("Stop recording stream")
-            
+
         ## Can also close with 'q'
         if drawing:
             k = cv2.waitKey(1)
             if k == ord('q') or keyboard.is_pressed('q'):
                 break
-    
+
         ## Calculate FPS
         cTime = time.time()
         fps = 1 / (cTime - pTime)
         pTime = cTime
-    
+
     ## Wait for disconnection
     print("Disconnected. Exiting...")
-    
+
     ## Exit
     streaming=False
     if(not noClientTesting):
@@ -430,4 +434,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-

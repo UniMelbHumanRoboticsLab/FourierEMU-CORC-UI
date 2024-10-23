@@ -40,7 +40,7 @@ public class SceneManager : MonoBehaviour
         //Admin panel elements
         InputField IPInput = GameObject.Find("AdminPanel/IPInput").GetComponent<InputField>();
         IPInput.text = "192.168.7.2";
-        //IPInput.text = "127.0.0.1";
+        //IPInput.text = "10.100.237.114";
         
         Button ConnectBt = GameObject.Find("AdminPanel/ConnectBt").GetComponent<Button>();
         ConnectBt.onClick.AddListener(() => { Connect(ConnectBt, IPInput); });
@@ -312,18 +312,24 @@ public class SceneManager : MonoBehaviour
                     //Remove pt: last one filled in
                     GameObject pts_list = GameObject.Find("PtsLayout");
                     int last_idx = pts_list.transform.childCount-1;
-                    if(GameObject.Find("PtsLayout/"+(last_idx).ToString("0")+"/VertLayout/PtLayout/"+"Hidden/x_val").GetComponent<InputField>().text == "")
+                    if(last_idx==0 && (GameObject.Find("PtsLayout/"+(last_idx).ToString("0")+"/VertLayout/PtLayout/"+"Hidden/x_val").GetComponent<InputField>().text == ""))
                     {
-                        last_idx--;
-                        Button del_btn = GameObject.Find("PtsLayout/"+last_idx.ToString()+"/DelPtBt").GetComponent<Button>();
-                        DelPt(del_btn);
+                        return;
                     }
                     else
                     {
-                        Button del_btn = GameObject.Find("PtsLayout/"+last_idx.ToString()+"/DelPtBt").GetComponent<Button>();
-                        DelPt(del_btn);
+                        if(GameObject.Find("PtsLayout/"+(last_idx).ToString("0")+"/VertLayout/PtLayout/"+"Hidden/x_val").GetComponent<InputField>().text == "")
+                        {
+                            last_idx--;
+                            Button del_btn = GameObject.Find("PtsLayout/"+last_idx.ToString()+"/DelPtBt").GetComponent<Button>();
+                            DelPt(del_btn);
+                        }
+                        else
+                        {
+                            Button del_btn = GameObject.Find("PtsLayout/"+last_idx.ToString()+"/DelPtBt").GetComponent<Button>();
+                            DelPt(del_btn);
+                        }
                     }
-                    
 
                 }
             }
@@ -469,14 +475,14 @@ public class SceneManager : MonoBehaviour
             GameObject.Find(vals_path+"Hidden/y_val").GetComponent<InputField>().text="";
             GameObject.Find(vals_path+"Hidden/z_val").GetComponent<InputField>().text="";
             GameObject.Find(vals_path+"d_val").GetComponent<InputField>().text="";
-            GameObject.Find(vals_path+"T_val").GetComponent<Slider>().value=3.0f;
+            GameObject.Find(vals_path+"T_val").GetComponent<Slider>().value=4.0f;
             Slider T_valSl = GameObject.Find(vals_path+"T_val").GetComponent<Slider>();
-            T_valSl.GetComponentsInChildren<TMPro.TextMeshProUGUI>()[1].text="3.0s";
+            T_valSl.GetComponentsInChildren<TMPro.TextMeshProUGUI>()[1].text="4.0s";
             T_valSl.onValueChanged.AddListener(delegate { UpdatePtTimeSlider(T_valSl.value, T_valSl); });
             
             Slider T_pauseSl = GameObject.Find(vals_path+"T_pause_val").GetComponent<Slider>();
-            T_pauseSl.value=0f;
-            T_pauseSl.GetComponentsInChildren<TMPro.TextMeshProUGUI>()[1].text="0s";
+            T_pauseSl.value=1.0f;
+            T_pauseSl.GetComponentsInChildren<TMPro.TextMeshProUGUI>()[1].text="1s";
             T_pauseSl.onValueChanged.AddListener(delegate { UpdatePtPauseTimeSlider(T_pauseSl.value, T_pauseSl); });
         }
 

@@ -1,31 +1,43 @@
-# Upperlimb-Localization
-The project is developed in Windows 10 Operating System by Python 3.7.9
+# FourierEMU-CORC-UI
 
-Refer to:
+## Upper-limb tracking
 
-https://github.com/google/mediapipe  
-https://github.com/pupil-labs/apriltags  
-https://github.com/Razg93/Skeleton-Tracking-using-RealSense-depth-camera
+Set of Python scripts to perform an upper-limb pose tracking using MediaPipe and an Intel RealSense camera and to communicate to the main Unity program using FLNL to log the upper-limb pose in real-time.
 
-Depends on mediapipe, pupil_apriltags, pyrealsense2, keyboard
+### Dependencies
+- Mediapipe: https://github.com/google/mediapipe 
+- Intel RealSense camera package: https://pypi.org/project/pyrealsense2/
+- RealSense camera access script: https://github.com/Razg93/Skeleton-Tracking-using-RealSense-depth-camera
+- Keyboard package
 
-`pip install pyrealsense2`
+In short ` pip install pyrealsense2 mediapipe keyboard`.
 
-`pip install mediapipe`
 
-`pip install pupil_apriltags`  
+### Building executable
+The main script `main.py` can be compiled to standalone executable using pyinstaller (tested with v5.2) and `main.spec` file:
 
-## Building executable
-An executable can be built using pyinstaller:
-`pyinstaller main.spec`
+```
+pyinstaller main.spec
+```
 
-## Degree of Freedom (DoF):  
-![image](image/dof.png)  
-DoF1 Plane of Elevation  
-DoF2 Elevation  
-DoF3 Internal/External  
-DoF4 Extension/Flexion  
+### Communication
 
-## Coordinate System 
-The camera coordinate system has the origin at the center of RGB imager. The y-axis points from the imager out the lens. The x-axis is to the right in the image taken by the camera, and z is upward. The Robotic coordinate frame is centered at the center of the tag, with x-axis into the tag, y-axis to the left, and z-axis upward.
+The script starts an FLNL client responding to the following commands:
+- "STA": Start streaming joint positions
+- "STO": Stop streaming joint positions
+- "DIS": Disconnect from server (and exit)
+- "ARL": Switch to track Left arm
+- "ARR": Switch to track Right arm
+
+When streaming, the script regularly sends a value packet with:
+- 0.0 or 1.0 for respectively Left or Right arm tracking
+- x , y, z position in m for each of the tracked joints:
+
+Left eye, Right eye, Left Hip, Right Hip, Left Shoulder, Right Shoulder, Left Elbow, Left Wrist for left arm tracking.
+
+Left eye, Right eye, Left Hip, Right Hip, Left Shoulder, Right Shoulder, Right Elbow, Right Wrist for right arm tracking.
+
+
+### Coordinate System 
+The camera coordinate system has the origin at the center of RGB imager. The y-axis points from the imager out the lens. The x-axis is to the right in the image taken by the camera, and z is upward.
 
