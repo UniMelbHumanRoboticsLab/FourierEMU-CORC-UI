@@ -1,6 +1,6 @@
 # FourierEMU-CORC-UI
 
-UI (Unity) and [CORC](https://github.com/UniMelbHumanRoboticsLab/CANOpenRobotController) stateMachine for Fourier EMU. Associated paper can be found here. 
+UI (Unity) and [CORC](https://github.com/UniMelbHumanRoboticsLab/CANOpenRobotController) stateMachine for Fourier EMU. The associated publication can be found [here](https://doi.org/10.1080/09638288.2024.2394175).
 
 The repository includes:
 
