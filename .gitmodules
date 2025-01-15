@@ -1,4 +1,4 @@
 [submodule "CANOpenRobotController"]
 	path = CANOpenRobotController
-	url = https://github.com/vcrocher/CANOpenRobotController.git
+	url = https://github.com/jqloh/CANOpenRobotController.git
 	branch = FourierEMU
