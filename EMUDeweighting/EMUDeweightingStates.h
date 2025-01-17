@@ -131,6 +131,7 @@ class M3NothingState : public EMUFourierState {
         if(iterations()%100==1) {
 
             imuData = robot->imu->getAccl();
+            
             std::cout << "imuData [0]: " << imuData[0] << ",imuData [1]: " << imuData[1] << ",imuData [2]: " << imuData[2] << std::endl;
         }
     }
