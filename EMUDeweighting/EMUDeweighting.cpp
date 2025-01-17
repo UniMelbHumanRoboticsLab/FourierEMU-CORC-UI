@@ -283,8 +283,8 @@ bool updateMass(StateMachine & SM) {
 
 EMUDeweighting::EMUDeweighting() {
     //Create a Robot and set it to generic state machine
-    // setRobot(std::make_unique<RobotM3>("EMU_FOURIER", "M3_params.yaml"));
-    setRobot(std::make_unique<RobotM3>("EMU_MELB", "M3_params.yaml"));
+    setRobot(std::make_unique<RobotM3>("EMU_FOURIER", "M3_params.yaml"));
+    // setRobot(std::make_unique<RobotM3>("EMU_MELB", "M3_params.yaml"));
 
     //TODO: include new FLNL state and associated transitions
     //TODO: proper logic and transitions

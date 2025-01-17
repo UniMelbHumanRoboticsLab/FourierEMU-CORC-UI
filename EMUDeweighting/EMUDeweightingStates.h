@@ -130,10 +130,8 @@ class M3NothingState : public EMUFourierState {
         // try to get orientation data
         if(iterations()%100==1) {
 
-            imuData = robot->getXiaoData(robot->xiao,2);
-            std::cout << "imuData [0]: " << imuData[0] << std::endl;
-            std::cout << "imuData [1]: " << imuData[1] << std::endl;
-            std::cout << "imuData [2]: " << imuData[2] << std::endl;
+            imuData = robot->imu->getAccl();
+            std::cout << "imuData [0]: " << imuData[0] << ",imuData [1]: " << imuData[1] << ",imuData [2]: " << imuData[2] << std::endl;
         }
     }
         
